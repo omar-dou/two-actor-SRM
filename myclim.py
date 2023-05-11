@@ -3,10 +3,6 @@ import xarray as xr
 import numpy as np
 import sys
 #
-#--expdecay
-def expdecay(x,a,b):
-  return a*(1.-np.exp(-x/b))
-#
 #-----------------------------------------------------
 #--routine to initialise the AOD response to emissions
 #-----------------------------------------------------
@@ -76,7 +72,7 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 #--------------------------------------
 def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
     #--Kleinschmitt et al ACP (2018)
-    #-- -10 Wm-2 per unit AOD 
+    #-- -10 Wm-2 per unit AOD (positive because our AODs are negative)
     aod2rf = 10.0  
     AOD_SH, AOD_NH = emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
     return AOD_SH*aod2rf, AOD_NH*aod2rf
@@ -84,16 +80,17 @@ def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 #----------------
 #--monsoon precip 
 #----------------
-def monsoon(AOD_SH,AOD_NH):
+def Monsoon(AOD_SH,AOD_NH,noise=10):
     #--Roose et al., Climate Dynamics, 2023, https://doi.org/10.1007/s00382-023-06799-3
     #--precip change in % as a function of the interhemispheric difference in AOD
-    precip_change=-78.6*(AOD_NH-AOD_SH)-10.6
+    #--since our AODs are negative, we change the sign
+    precip_change=-78.6*(AOD_SH-AOD_NH)-10.6 + random.gauss(0.,1.)*noise
     return precip_change
 #
 #----------------------
 #--simple climate model
 #----------------------
-def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0):
+def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # T = surface air temperature anomaly in K 
@@ -130,7 +127,7 @@ def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0
 #----------------------------
 #--simple climate NH/SH model
 #----------------------------
-def clim_nh_sh(Tnh,Tsh,T0nh,T0sh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0):
+def clim_nh_sh(Tnh,Tsh,T0nh,T0sh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -188,7 +185,7 @@ def clim_nh_sh(Tnh,Tsh,T0nh,T0sh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C
 #--simple climate NH/SH model v2
 #-------------------------------
 def clim_nh_sh_v2(Tnh,Tsh,T0nh,T0sh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
-                  f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0):
+                  f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -210,15 +207,15 @@ def clim_nh_sh_v2(Tnh,Tsh,T0nh,T0sh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
 # gnh,gsh = applied hemispheric SRM forcing in Wm-2
 #
   gsh,gnh=emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
-#--test sign geff 
+  #--test sign geff 
   if geff<0:
     sys.exit('SRM efficacy geff has to be a positive number')
-#--discretize yearly timestep
+  #--discretize yearly timestep
   dt = 1./float(ndt)
-#--initial T and TO
+  #--initial T and TO
   Ti_nh = Tnh ; T0i_nh = T0nh
   Ti_sh = Tsh ; T0i_sh = T0sh
-# time loop
+  # time loop
   for i in range(ndt):
      #--nh
      Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
@@ -238,10 +235,8 @@ def clim_nh_sh_v2(Tnh,Tsh,T0nh,T0sh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
      T0i_nh = T0f_nh
      Ti_sh  = Tf_sh 
      T0i_sh = T0f_sh
-# add noise on final Tf
-  #Tnoise = random.gauss(0.,noise)
-  #Tf_nh = Tf_nh + Tnoise
-  #Tf_sh = Tf_sh + Tnoise
+  # add noise on final Tf
   Tf_nh = Tf_nh + random.gauss(0.,noise)
   Tf_sh = Tf_sh + random.gauss(0.,noise)
+  #--return outputs
   return Tf_nh, Tf_sh, T0f_nh, T0f_sh
