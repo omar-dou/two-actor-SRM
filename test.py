@@ -1,16 +1,13 @@
 from simple_pid import PID
 import matplotlib.pyplot as plt
 import numpy as np
-import random
-import pandas as pd
-from myclim import clim, clim_nh_sh, clim_nh_sh_v2, initialise_aod_responses, emi2aod, emi2rf, Monsoon
-from scipy.optimize import curve_fit
+from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, emi2aod, emi2rf, Monsoon
 
 #--initialise PID controller for each actors
 #--PID(Kp, Ki, Kd, setpoint)
-#--Kp: proportional gain 
-#--Ki: integral gain
-#--Kd: derivative gain
+#--Kp: proportional gain (typically for 0.8 for T target and 0.6 for monsoon target)
+#--Ki: integral gain (typically for 0.08 for T target and 0.06 for monsoon target)
+#--Kd: derivative gain (typically 0)
 #--type: NHT (NH temp), SHT (SH temp), monsoon
 #--setpoint: objective (temperature change in K, monsoon change in % counted negative)
 #--emimin, emimax: bounds of emissions (counted negative)
@@ -30,12 +27,13 @@ pltshow=True
 #--period 
 t0=0 ; t5=200
 #--max GHG forcing
-fmax=3.0
+fmax=4.0
 #--noise level
-noise=0.05
+noise_T=0.05
+noise_monsoon=10.
 #--list of actors, type of setpoint, setpoint, emissions min/max and emission points
 A={'Kp':0.8,'Ki':0.6,'Kd':0.0,'type':'NHT','setpoint':0.0,'emimin':-20.0,'emimax':0.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-B={'Kp':1.0,'Ki':1.0,'Kd':0.0,'type':'monsoon','setpoint':0.0,'emimin':-20.0,'emimax':0.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':-10.0,'emimin':-20.0,'emimax':0.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #--Properties of Actors
 P={'A':A,'B':B} 
 Actors=P.keys()
@@ -87,9 +85,9 @@ for Actor in Actors:
   emissmax[Actor][t3:t4]=0
 #
 #--initialise more stuff
-T_SRM_nh=[] ; T_SRM_sh=[] ; T_noSRM_nh=[] ; T_noSRM_sh=[] ; g_SRM_nh=[] ; g_SRM_sh=[]
-TnoSRMnh=0 ; T0noSRMnh=0 ; TnoSRMsh=0 ; T0noSRMsh=0
-TSRMnh=0   ; T0SRMnh=0   ; TSRMsh=0   ; T0SRMsh=0
+T_SRM_sh=[] ; T_SRM_nh=[] ; T_noSRM_sh=[] ; T_noSRM_nh=[] ; g_SRM_sh=[] ; g_SRM_nh=[]
+TnoSRMsh=0 ; T0noSRMsh=0 ; TnoSRMnh=0 ; T0noSRMnh=0
+TSRMsh=0   ; T0SRMsh=0   ; TSRMnh=0   ; T0SRMnh=0
 monsoon_SRM=[] ; monsoon_noSRM=[] 
 #
 #--loop on time
@@ -97,9 +95,9 @@ for t in range(t0,t5):
   #
   #--reference calculation with no SRM 
   #-----------------------------------
-  TnoSRMnh,TnoSRMsh,T0noSRMnh,T0noSRMsh=clim_nh_sh(TnoSRMnh,TnoSRMsh,T0noSRMnh,T0noSRMsh,f=f[t],gnh=0,gsh=0,noise=noise)
-  T_noSRM_nh.append(TnoSRMnh) ; T_noSRM_sh.append(TnoSRMsh)
-  monsoon=Monsoon(0.0,0.0,noise=1) ; monsoon_noSRM.append(monsoon)
+  TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh=clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,f=f[t],gnh=0,gsh=0,noise=noise_T)
+  T_noSRM_sh.append(TnoSRMsh) ; T_noSRM_nh.append(TnoSRMnh) 
+  monsoon=Monsoon(0.0,0.0,noise=noise_monsoon) ; monsoon_noSRM.append(monsoon)
   #
   #--calculation with SRM
   #----------------------
@@ -119,11 +117,11 @@ for t in range(t0,t5):
            emits[emipoint] = emi_SRM[Actor][emipoint]
   #
   #--iterate climate model
-  TSRMnh,TSRMsh,T0SRMnh,T0SRMsh=clim_nh_sh_v2(TSRMnh,TSRMsh,T0SRMnh,T0SRMsh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,f=f[t],noise=noise)
-  monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=1)
+  TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh=clim_sh_nh_v2(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,f=f[t],noise=noise_T)
+  monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=noise_monsoon)
   #
-  #--report into lists for plots
-  T_SRM_nh.append(TSRMnh) ; T_SRM_sh.append(TSRMsh) ; monsoon_SRM.append(monsoon)
+  #--report climate model output into lists for plots
+  T_SRM_sh.append(TSRMsh) ; T_SRM_nh.append(TSRMnh) ; g_SRM_sh.append(gsh) ; g_SRM_nh.append(gnh) ; monsoon_SRM.append(monsoon)
   #
   # compute new ouput from the PID according to the systems current value
   #--loop on emission points of Actor
@@ -137,27 +135,64 @@ for t in range(t0,t5):
        if P[Actor]['type']=='monsoon':
            emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon,dt=1))
 #
+#--change sign of emissions before plotting
+for Actor in Actors:
+   for emipoint in P[Actor]['emipoints']:
+       emi_SRM[Actor][emipoint] = [-1.*x for x in emi_SRM[Actor][emipoint]]
+#
 #--basic plot with results
 myformat="{0:3.1f}"
 title='Controlling global SAI intervention'
+fig=plt.figure(figsize=(12,14))
+#
+plt.subplot(511)
 plt.title(title,fontsize=10)
 plt.plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
 plt.plot(f,label='GHG RF',c='red')
+plt.legend(loc='upper left',fontsize=8)
+plt.ylabel('RF (Wm$^{-2}$)',fontsize=10)
+plt.xlim(t0,t5)
+plt.xticks(np.arange(t0,t5+1,25),[])
+#
+plt.subplot(512)
 for Actor in Actors:
    if Actor == 'A': linestyle='solid'
    if Actor == 'B': linestyle='dashed'
    for emipoint in P[Actor]['emipoints']:
        plt.plot(emi_SRM[Actor][emipoint],label='Emissions '+Actor+' '+emipoint,c='blue',linestyle=linestyle)
-plt.plot(T_noSRM_nh,label='NH dT w/o SRM',c='darkorange')
-plt.plot(T_noSRM_sh,label='SH dT w/o SRM',c='darkorange',linestyle='dashed')
-plt.plot(T_SRM_nh,label='NH dT w SRM',c='darkgreen')
-plt.plot(T_SRM_sh,label='SH dT w SRM',c='darkgreen',linestyle='dashed')
-plt.plot(monsoon_SRM,label='monsoon w SRM',c='pink')
-plt.plot(monsoon_noSRM,label='monsoon w/o SRM',c='pink',linestyle='dashed')
-plt.legend(loc='lower left',fontsize=8)
-plt.xlabel('Years',fontsize=14)
-plt.ylabel('T change ($^\circ$C) / Emissions (TgS yr$^{-1}$)',fontsize=14)
+plt.legend(loc='upper left',fontsize=8)
+plt.ylabel('Emi (TgS yr$^{-1}$)',fontsize=10)
 plt.xlim(t0,t5)
-#plt.ylim(-15,4)
+plt.xticks(np.arange(t0,t5+1,25),[])
+#
+plt.subplot(513)
+plt.plot(g_SRM_nh,label='NH SRM g',c='blue')
+plt.plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
+plt.legend(loc='upper left',fontsize=8)
+plt.ylabel('RF SRM (Wm$^{-2}$)',fontsize=10)
+plt.xlim(t0,t5)
+plt.xticks(np.arange(t0,t5+1,25),[])
+#
+plt.subplot(514)
+plt.plot(T_noSRM_nh,label='NH dT w/o SRM',c='red')
+plt.plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed')
+plt.plot(T_SRM_nh,label='NH dT w SRM',c='blue')
+plt.plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed')
+plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
+plt.legend(loc='upper left',fontsize=8)
+plt.ylabel('Temp. ($^\circ$C)',fontsize=10)
+plt.xlim(t0,t5)
+plt.xticks(np.arange(t0,t5+1,25),[])
+#
+plt.subplot(515)
+plt.plot(monsoon_noSRM,label='monsoon w/o SRM',c='red')
+plt.plot(monsoon_SRM,label='monsoon w SRM',c='blue')
+plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
+plt.legend(loc='upper left',fontsize=8)
+plt.xlabel('Years',fontsize=10)
+plt.ylabel('Monsoon (%)',fontsize=10)
+plt.xlim(t0,t5)
+plt.xticks(np.arange(t0,t5+1,25))
+#
 plt.show()
 plt.savefig(dirout+filename)

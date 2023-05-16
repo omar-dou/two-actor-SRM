@@ -20,9 +20,10 @@ High gain ==> Kp = 2.88 Wm-2/°C  et Ki = 4.32 Wm-2/°C/yr
 Low gain  ==> Kp = 1.44 Wm-2/°C  et Ki = 2.16 Wm-2/°C/yr
 
 We take typically Kp=4 Wm-2/°C and Ki=3 Wm-2/°C/yr
-It can be translated for emissions in Tg S : Kp=0.8 Wm-2/TgS Ki=0.6 Wm-2/TgS/yr
 
-monsoons change
+2°C <=> 3 Wm-2 <=> 6 TgS/yr <=> 10%
+
+It can be translated for emissions in Tg S : Kp=8 (TgS/yr)/°C and Ki=6 (TgS/yr)/°C/yr
+and Kp=0.8 (TgS/yr)/% monsoon and Ki=0.6 (TgS/yr)/%/yr
+
 precip change [%] = -78.6*(AOD_NH-AOD_SH)-10.6 
-ie 10 TgS => AOD=0.1 => 10% change
-Kp = 1 %/TgS    Ki = 1 %/TgS/yr

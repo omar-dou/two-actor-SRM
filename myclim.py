@@ -50,8 +50,10 @@ def initialise_aod_responses():
 #--routine to convolve emissions with IRF to produce SH and NH AOD
 #-----------------------------------------------------------------
 def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
+    #--emits: dictionary with emissions counted negative
     #--GtS injected in pulse experiments
-    emi0=10.0    
+    #--as emi are negative by construction, we use a negative emi0 to correct the sign
+    emi0=-10.0    
     #--initialise
     AOD_SH=0.0 ; AOD_NH=0.0
     #--check length of time series of emissions
@@ -73,7 +75,7 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
     #--Kleinschmitt et al ACP (2018)
     #-- -10 Wm-2 per unit AOD (positive because our AODs are negative)
-    aod2rf = 10.0  
+    aod2rf = -10.0  
     AOD_SH, AOD_NH = emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
     return AOD_SH*aod2rf, AOD_NH*aod2rf
 #
@@ -83,8 +85,7 @@ def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 def Monsoon(AOD_SH,AOD_NH,noise=10):
     #--Roose et al., Climate Dynamics, 2023, https://doi.org/10.1007/s00382-023-06799-3
     #--precip change in % as a function of the interhemispheric difference in AOD
-    #--since our AODs are negative, we change the sign
-    precip_change=-78.6*(AOD_SH-AOD_NH)-10.6 + random.gauss(0.,1.)*noise
+    precip_change=-78.6*(AOD_NH-AOD_SH)-10.6 + random.gauss(0.,1.)*noise
     return precip_change
 #
 #----------------------
@@ -127,7 +128,7 @@ def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0
 #----------------------------
 #--simple climate NH/SH model
 #----------------------------
-def clim_nh_sh(Tnh,Tsh,T0nh,T0sh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
+def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -148,43 +149,40 @@ def clim_nh_sh(Tnh,Tsh,T0nh,T0sh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C
 #--test sign geff 
   if geff<0:
     sys.exit('SRM efficacy geff has to be a positive number')
-#--discretize yearly timestep
+  #--discretize yearly timestep
   dt = 1./float(ndt)
-#--initial T and TO
-  Ti_nh = Tnh ; T0i_nh = T0nh
+  #--initial T and TO
   Ti_sh = Tsh ; T0i_sh = T0sh
-# time loop
+  Ti_nh = Tnh ; T0i_nh = T0nh
+  # time loop
   for i in range(ndt):
-     #--nh
-     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
-     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
      #--sh
      Tf_sh  = Ti_sh + dt/C*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
      T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
+     #--nh
+     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
+     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh
      dT0 = T0f_nh - T0f_sh
-     Tf_nh = Tf_nh - dt/tau_nh_sh * dT
      Tf_sh = Tf_sh + dt/tau_nh_sh * dT
-     T0f_nh = T0f_nh - dt/tau_nh_sh * dT0
+     Tf_nh = Tf_nh - dt/tau_nh_sh * dT
      T0f_sh = T0f_sh + dt/tau_nh_sh * dT0
+     T0f_nh = T0f_nh - dt/tau_nh_sh * dT0
      #--preparing for next time substep
-     Ti_nh  = Tf_nh 
-     T0i_nh = T0f_nh
      Ti_sh  = Tf_sh 
      T0i_sh = T0f_sh
-# add noise on final Tf
-  #Tnoise = random.gauss(0.,noise)
-  #Tf_nh = Tf_nh + Tnoise
-  #Tf_sh = Tf_sh + Tnoise
-  Tf_nh = Tf_nh + random.gauss(0.,noise)
+     Ti_nh  = Tf_nh 
+     T0i_nh = T0f_nh
+  # add noise on final Tf
   Tf_sh = Tf_sh + random.gauss(0.,noise)
-  return Tf_nh, Tf_sh, T0f_nh, T0f_sh
+  Tf_nh = Tf_nh + random.gauss(0.,noise)
+  return Tf_sh, Tf_nh, T0f_sh, T0f_nh
 #
 #-------------------------------
 #--simple climate NH/SH model v2
 #-------------------------------
-def clim_nh_sh_v2(Tnh,Tsh,T0nh,T0sh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
+def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
                   f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
@@ -213,30 +211,30 @@ def clim_nh_sh_v2(Tnh,Tsh,T0nh,T0sh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
   #--discretize yearly timestep
   dt = 1./float(ndt)
   #--initial T and TO
-  Ti_nh = Tnh ; T0i_nh = T0nh
   Ti_sh = Tsh ; T0i_sh = T0sh
+  Ti_nh = Tnh ; T0i_nh = T0nh
   # time loop
   for i in range(ndt):
-     #--nh
-     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
-     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
      #--sh
      Tf_sh  = Ti_sh + dt/C*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
      T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
+     #--nh
+     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
+     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh
      dT0 = T0f_nh - T0f_sh
-     Tf_nh = Tf_nh - dt/tau_nh_sh * dT
      Tf_sh = Tf_sh + dt/tau_nh_sh * dT
-     T0f_nh = T0f_nh - dt/tau_nh_sh * dT0
+     Tf_nh = Tf_nh - dt/tau_nh_sh * dT
      T0f_sh = T0f_sh + dt/tau_nh_sh * dT0
+     T0f_nh = T0f_nh - dt/tau_nh_sh * dT0
      #--preparing for next time substep
-     Ti_nh  = Tf_nh 
-     T0i_nh = T0f_nh
      Ti_sh  = Tf_sh 
      T0i_sh = T0f_sh
+     Ti_nh  = Tf_nh 
+     T0i_nh = T0f_nh
   # add noise on final Tf
-  Tf_nh = Tf_nh + random.gauss(0.,noise)
   Tf_sh = Tf_sh + random.gauss(0.,noise)
+  Tf_nh = Tf_nh + random.gauss(0.,noise)
   #--return outputs
-  return Tf_nh, Tf_sh, T0f_nh, T0f_sh
+  return Tf_sh, Tf_nh, T0f_sh, T0f_nh, gsh, gnh
