@@ -1,6 +1,7 @@
 from simple_pid import PID
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, emi2aod, emi2rf, Monsoon
 
 #--initialise PID controller for each actors
@@ -9,8 +10,8 @@ from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, em
 #--Ki: integral gain (typically for 0.08 for T target and 0.06 for monsoon target)
 #--Kd: derivative gain (typically 0)
 #--type: NHT (NH temp), SHT (SH temp), monsoon
-#--setpoint: objective (temperature change in K, monsoon change in % counted negative)
-#--emimin, emimax: bounds of emissions (counted negative)
+#--setpoint: objective (temperature change in K, monsoon change in %)
+#--emimin, emimax: bounds of emissions (in TgS/yr)
 #--emipoints: emission points: 30N, 15N, Eq, 15S, 30S
 #--t0= start of model integration (in years)
 #--t1: start of ramping up SRM intervention
@@ -26,27 +27,40 @@ dirout='plots/'
 pltshow=True
 #--period 
 t0=0 ; t5=200
+#--volcano
+volcano=True
 #--max GHG forcing
 fmax=4.0
 #--noise level
 noise_T=0.05
 noise_monsoon=10.
 #--list of actors, type of setpoint, setpoint, emissions min/max and emission points
-A={'Kp':0.8,'Ki':0.6,'Kd':0.0,'type':'NHT','setpoint':0.0,'emimin':-20.0,'emimax':0.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':-10.0,'emimin':-20.0,'emimax':0.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
+C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #--Properties of Actors
 P={'A':A,'B':B} 
+if 'C' in vars(): P['C']=C
+if 'D' in vars(): P['D']=D
 Actors=P.keys()
 Kp='Kp' ; Ki='Ki' ; Kd='Kd' ; setpoint='setpoint'
 #--print Actors and their properties on creen
 for Actor in Actors:
   print(Actor,'=',P[Actor])
+#
 #--create a list of all emission points
 emipoints=[]
 for Actor in Actors: 
     for emipoint in P[Actor]['emipoints']:
         if emipoint not in emipoints: emipoints.append(emipoint)
+    #--if target type is monsoon, reverse sign of target
+    if P[Actor]['type']=='monsoon': P[Actor]['setpoint'] = -1.* P[Actor]['setpoint']
 print('List of emission points:', emipoints)
+markers={'30S':'v','15S':'v','Eq':'o','15N':'^','30N':'^'}
+sizes={'30S':30,'15S':15,'Eq':15,'15N':15,'30N':30}
+colors={'A':'green','B':'orange','C':'purple'}
+#--format float
+myformat="{0:3.1f}"
 #
 #--initialise impulse response functions
 aod_strat_sh, aod_strat_nh, nbyr_irf = initialise_aod_responses()
@@ -56,6 +70,10 @@ f=np.zeros((t5))
 f[0:100]=np.linspace(0.,fmax,100)
 f[100:150]=fmax
 f[150:]=np.linspace(fmax,3*fmax/4,50)
+#--transient decrease in forcing if volcanic eruption
+if volcano:
+   f[125]+=-2.0
+   f[126]+=-1.0
 #
 #--define filename
 filename='test.png'
@@ -72,8 +90,8 @@ for Actor in Actors:
     PIDs[Actor][emipoint] = PID(P[Actor][Kp],P[Actor][Ki],P[Actor][Kd],setpoint=P[Actor][setpoint])
     #--initialise the emission arrays
     emi_SRM[Actor][emipoint]=[0.0]
-  #--initialise the profile of emission min/max
-  emimin=P[Actor]['emimin'] ; emimax=P[Actor]['emimax']
+  #--initialise the profile of emission min/max (emissions are counted negative)
+  emimin=-1*P[Actor]['emimax'] ; emimax=-1*P[Actor]['emimin']
   t1=P[Actor]['t1'] ; t2=P[Actor]['t2'] ; t3=P[Actor]['t3'] ; t4=P[Actor]['t4']
   emissmin[Actor]=np.zeros((t5))
   emissmax[Actor]=np.zeros((t5))
@@ -118,6 +136,7 @@ for t in range(t0,t5):
   #
   #--iterate climate model
   TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh=clim_sh_nh_v2(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,f=f[t],noise=noise_T)
+  #--compute monsoon change
   monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=noise_monsoon)
   #
   #--report climate model output into lists for plots
@@ -129,19 +148,28 @@ for t in range(t0,t5):
     for emipoint in P[Actor]['emipoints']:
        #--append the emission arrays
        if P[Actor]['type']=='NHT':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh,dt=1))
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh+random.gauss(0,0.01),dt=1))
        if P[Actor]['type']=='SHT':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh,dt=1))
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+random.gauss(0,0.01),dt=1))
        if P[Actor]['type']=='monsoon':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon,dt=1))
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+random.gauss(0,1),dt=1))
 #
 #--change sign of emissions before plotting
 for Actor in Actors:
    for emipoint in P[Actor]['emipoints']:
        emi_SRM[Actor][emipoint] = [-1.*x for x in emi_SRM[Actor][emipoint]]
 #
+#--assess mean and variability
+print('Mean and s.d. of TSRMnh w/o SRM:',myformat.format(np.mean(T_noSRM_nh[t2:])),'+/-',myformat.format(np.std(T_noSRM_nh[t2:])))
+print('Mean and s.d. of TSRMnh w   SRM:',myformat.format(np.mean(T_SRM_nh[t2:])),'+/-',myformat.format(np.std(T_SRM_nh[t2:])))
+#
+print('Mean and s.d. of TSRMsh w/o SRM:',myformat.format(np.mean(T_noSRM_sh[t2:])),'+/-',myformat.format(np.std(T_noSRM_sh[t2:])))
+print('Mean and s.d. of TSRMsh w   SRM:',myformat.format(np.mean(T_SRM_sh[t2:])),'+/-',myformat.format(np.std(T_SRM_sh[t2:])))
+#
+print('Mean and s.d. of monsoon w/o SRM:',myformat.format(np.mean(monsoon_noSRM[t2:])),'+/-',myformat.format(np.std(monsoon_noSRM[t2:])))
+print('Mean and s.d. of monsoon w   SRM:',myformat.format(np.mean(monsoon_SRM[t2:])),'+/-',myformat.format(np.std(monsoon_SRM[t2:])))
+#
 #--basic plot with results
-myformat="{0:3.1f}"
 title='Controlling global SAI intervention'
 fig=plt.figure(figsize=(12,14))
 #
@@ -156,10 +184,9 @@ plt.xticks(np.arange(t0,t5+1,25),[])
 #
 plt.subplot(512)
 for Actor in Actors:
-   if Actor == 'A': linestyle='solid'
-   if Actor == 'B': linestyle='dashed'
    for emipoint in P[Actor]['emipoints']:
-       plt.plot(emi_SRM[Actor][emipoint],label='Emissions '+Actor+' '+emipoint,c='blue',linestyle=linestyle)
+       plt.plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
+       plt.scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
 plt.legend(loc='upper left',fontsize=8)
 plt.ylabel('Emi (TgS yr$^{-1}$)',fontsize=10)
 plt.xlim(t0,t5)
