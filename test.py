@@ -24,7 +24,7 @@ from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, em
 #--directory for plots
 dirout='plots/'
 #--show plots while running
-pltshow=True
+ltshow=True
 #--period 
 t0=0 ; t5=200
 #--volcano
@@ -32,33 +32,69 @@ volcano=True
 #--max GHG forcing
 fmax=4.0
 #--noise level
-noise_T=0.05
-noise_monsoon=10.
-#--list of actors, type of setpoint, setpoint, emissions min/max and emission points
-A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
-C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
-#--Properties of Actors
-P={'A':A,'B':B} 
+noise_T=0.05       #--in K
+noise_monsoon=10.  #--in % change
+#--experiment 
+exp="3"
+#--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
+#--single actor
+if exp=="1a":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--single actor emitting in opposite hemisphere
+elif exp=="1b":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--single actor emitting in opposite hemisphere
+elif exp=="1c":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--two actors with each one injection point in same hemisphere
+elif exp=="2a":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--two actors with each one injection point in opposite hemisphere
+elif exp=="2b":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--two actors with each two injection points
+elif exp=="3":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+elif exp=="4":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+elif exp=="5":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--Initialise properties of Actors
+P={'A':A}
+if 'B' in vars(): P['B']=B
 if 'C' in vars(): P['C']=C
 if 'D' in vars(): P['D']=D
 Actors=P.keys()
 Kp='Kp' ; Ki='Ki' ; Kd='Kd' ; setpoint='setpoint'
-#--print Actors and their properties on creen
+#
+#--print Actors and their properties on screen
+title=''
 for Actor in Actors:
+  title=title+' - '+Actor+' '+P[Actor]['type']+' '+str(P[Actor]['setpoint'])
   print(Actor,'=',P[Actor])
+print(title)
 #
 #--create a list of all emission points
 emipoints=[]
-for Actor in Actors: 
+for Actor in Actors:
     for emipoint in P[Actor]['emipoints']:
         if emipoint not in emipoints: emipoints.append(emipoint)
-    #--if target type is monsoon, reverse sign of target
+    #--if target type is monsoon, reverse sign of target for technical reason
     if P[Actor]['type']=='monsoon': P[Actor]['setpoint'] = -1.* P[Actor]['setpoint']
 print('List of emission points:', emipoints)
 markers={'30S':'v','15S':'v','Eq':'o','15N':'^','30N':'^'}
 sizes={'30S':30,'15S':15,'Eq':15,'15N':15,'30N':30}
 colors={'A':'green','B':'orange','C':'purple'}
+#
 #--format float
 myformat="{0:3.1f}"
 #
@@ -76,7 +112,7 @@ if volcano:
    f[126]+=-1.0
 #
 #--define filename
-filename='test.png'
+filename='test'+str(exp).zfill(2)+'.png'
 #
 #--define the PIDs and the emission min/max profiles
 PIDs={} ; emissmin={} ; emissmax={} ; emi_SRM={}
@@ -148,7 +184,11 @@ for t in range(t0,t5):
     for emipoint in P[Actor]['emipoints']:
        #--append the emission arrays
        if P[Actor]['type']=='NHT':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh+random.gauss(0,0.01),dt=1))
+           #emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh+random.gauss(0,0.01),dt=1))
+           TSRMnh_withnoise=TSRMnh+random.gauss(0,0.01)
+           emi=PIDs[Actor][emipoint](TSRMnh_withnoise,dt=1)
+           emi_SRM[Actor][emipoint].append(emi)
+           print(Actor, emipoint, TSRMnh_withnoise, emi)
        if P[Actor]['type']=='SHT':
            emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+random.gauss(0,0.01),dt=1))
        if P[Actor]['type']=='monsoon':
@@ -170,14 +210,14 @@ print('Mean and s.d. of monsoon w/o SRM:',myformat.format(np.mean(monsoon_noSRM[
 print('Mean and s.d. of monsoon w   SRM:',myformat.format(np.mean(monsoon_SRM[t2:])),'+/-',myformat.format(np.std(monsoon_SRM[t2:])))
 #
 #--basic plot with results
-title='Controlling global SAI intervention'
+title='Controlling global SAI'+title
 fig=plt.figure(figsize=(12,14))
 #
 plt.subplot(511)
-plt.title(title,fontsize=10)
+plt.title(title,fontsize=12)
 plt.plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
 plt.plot(f,label='GHG RF',c='red')
-plt.legend(loc='upper left',fontsize=8)
+plt.legend(loc='upper left',fontsize=10)
 plt.ylabel('RF (Wm$^{-2}$)',fontsize=10)
 plt.xlim(t0,t5)
 plt.xticks(np.arange(t0,t5+1,25),[])
@@ -187,7 +227,7 @@ for Actor in Actors:
    for emipoint in P[Actor]['emipoints']:
        plt.plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
        plt.scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
-plt.legend(loc='upper left',fontsize=8)
+plt.legend(loc='upper left',fontsize=10)
 plt.ylabel('Emi (TgS yr$^{-1}$)',fontsize=10)
 plt.xlim(t0,t5)
 plt.xticks(np.arange(t0,t5+1,25),[])
@@ -195,7 +235,7 @@ plt.xticks(np.arange(t0,t5+1,25),[])
 plt.subplot(513)
 plt.plot(g_SRM_nh,label='NH SRM g',c='blue')
 plt.plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
-plt.legend(loc='upper left',fontsize=8)
+plt.legend(loc='upper left',fontsize=10)
 plt.ylabel('RF SRM (Wm$^{-2}$)',fontsize=10)
 plt.xlim(t0,t5)
 plt.xticks(np.arange(t0,t5+1,25),[])
@@ -206,7 +246,7 @@ plt.plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed')
 plt.plot(T_SRM_nh,label='NH dT w SRM',c='blue')
 plt.plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed')
 plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
-plt.legend(loc='upper left',fontsize=8)
+plt.legend(loc='upper left',fontsize=10)
 plt.ylabel('Temp. ($^\circ$C)',fontsize=10)
 plt.xlim(t0,t5)
 plt.xticks(np.arange(t0,t5+1,25),[])
@@ -215,7 +255,7 @@ plt.subplot(515)
 plt.plot(monsoon_noSRM,label='monsoon w/o SRM',c='red')
 plt.plot(monsoon_SRM,label='monsoon w SRM',c='blue')
 plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
-plt.legend(loc='upper left',fontsize=8)
+plt.legend(loc='lower left',fontsize=10)
 plt.xlabel('Years',fontsize=10)
 plt.ylabel('Monsoon (%)',fontsize=10)
 plt.xlim(t0,t5)

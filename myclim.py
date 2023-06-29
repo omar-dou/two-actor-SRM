@@ -8,12 +8,16 @@ import sys
 #-----------------------------------------------------
 def initialise_aod_responses():
    #--data
-   dirin="/thredds/tgcc/store/oboucher/S3A/"
+   #dirin="/thredds/tgcc/store/oboucher/S3A/"
+   dirin="/data/oboucher/S3A/"
    #--experiments 
-   exps=['eq','15S','15N','30S','30N']
+   exps=['eq','15S','15N','30S','30N','60S','60N']
    #--pulse injection 
    nbmthinyr=12 #--number of months in yr
-   #
+   #--initialisations
+   aod_strat_sh={}
+   aod_strat_nh={}
+   nbyr_irf={}
    #--reference experiment
    exp='ref'
    file=dirin+'LMDZOR-S3A-'+exp+'_19950101_20041231_1M_od550_STRAT.nc'
@@ -24,24 +28,26 @@ def initialise_aod_responses():
    lats_nh=lats[np.where(lats>=0.0)]
    lats_sh=lats[np.where(lats<=0.0)]
    #--length of pulse experiment (in yr)
-   nbyr_irf=len(xrfile.time_counter)//nbmthinyr
+   nbyr_irf[exp]=len(xrfile.time_counter)//nbmthinyr
    #--select and hemispherically-average AOD for ref experiment
    aod_ref_strat_sh=np.average(xrfile.sel(lat=lats_sh)['od550_STRAT'].values,axis=(1,2))
    aod_ref_strat_nh=np.average(xrfile.sel(lat=lats_nh)['od550_STRAT'].values,axis=(1,2))
-   #
    #--prepare AOD time series for 10 GtS injection experiments for 1 yr
-   aod_strat_sh={}
-   aod_strat_nh={}
    for exp in exps: 
-      file=dirin+'LMDZOR-S3A-'+exp+'_19950101_20041231_1M_od550_STRAT.nc'
+      if exp == '60S' or exp == '60N':
+        file=dirin+'LMDZOR-S3A-'+exp+'_19950101_20001231_1M_od550_STRAT.nc'
+      else:
+        file=dirin+'LMDZOR-S3A-'+exp+'_19950101_20041231_1M_od550_STRAT.nc'
       xrfile=xr.open_dataset(file)
-      aod_strat_sh[exp]=np.maximum(0,np.average(xrfile.sel(lat=lats_sh)['od550_STRAT'].values,axis=(1,2))-aod_ref_strat_sh)
-      aod_strat_nh[exp]=np.maximum(0,np.average(xrfile.sel(lat=lats_nh)['od550_STRAT'].values,axis=(1,2))-aod_ref_strat_nh)
+      nbmth=len(xrfile.time_counter)
+      nbyr_irf[exp]=len(xrfile.time_counter)//nbmthinyr
+      aod_strat_sh[exp]=np.maximum(0,np.average(xrfile.sel(lat=lats_sh)['od550_STRAT'].values,axis=(1,2))-aod_ref_strat_sh[0:nbmth])
+      aod_strat_nh[exp]=np.maximum(0,np.average(xrfile.sel(lat=lats_nh)['od550_STRAT'].values,axis=(1,2))-aod_ref_strat_nh[0:nbmth])
    #
    #--compute annual means
    for exp in exps: 
-      aod_strat_sh[exp]=np.average(aod_strat_sh[exp].reshape((nbyr_irf,nbmthinyr)),axis=1)
-      aod_strat_nh[exp]=np.average(aod_strat_nh[exp].reshape((nbyr_irf,nbmthinyr)),axis=1)
+      aod_strat_sh[exp]=np.average(aod_strat_sh[exp].reshape((nbyr_irf[exp],nbmthinyr)),axis=1)
+      aod_strat_nh[exp]=np.average(aod_strat_nh[exp].reshape((nbyr_irf[exp],nbmthinyr)),axis=1)
    #
    #--return responses
    return aod_strat_sh, aod_strat_nh, nbyr_irf
@@ -57,13 +63,13 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
     #--initialise
     AOD_SH=0.0 ; AOD_NH=0.0
     #--check length of time series of emissions
-    yrend=nbyr_irf
     for exp in emits.keys():
+       yrend=nbyr_irf[exp]
        yrend=min(yrend,len(emits[exp])) #--length (in yrs) of past injection time series
     #--loop on experiments
     for exp in emits.keys():
        #--loop on time series, only consider last nbyr years
-       for yr,emi in enumerate(emits[exp][-nbyr_irf:]):     
+       for yr,emi in enumerate(emits[exp][-nbyr_irf[exp]:]):     
            #--AODs by summing on injection points and years by convolving with IRF
            AOD_SH += aod_strat_sh[exp][yrend-1-yr]*emi/emi0
            AOD_NH += aod_strat_nh[exp][yrend-1-yr]*emi/emi0
