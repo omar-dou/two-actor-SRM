@@ -88,10 +88,10 @@ def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 #----------------
 #--monsoon precip 
 #----------------
-def Monsoon(AOD_SH,AOD_NH,noise=10):
+def Monsoon(AOD_SH,AOD_NH,noise):
     #--Roose et al., Climate Dynamics, 2023, https://doi.org/10.1007/s00382-023-06799-3
     #--precip change in % as a function of the interhemispheric difference in AOD
-    precip_change=-78.6*(AOD_NH-AOD_SH)-10.6 + random.gauss(0.,1.)*noise
+    precip_change=-78.6*(AOD_NH-AOD_SH)-10.6 + noise
     return precip_change
 #
 #----------------------
@@ -134,7 +134,7 @@ def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.0
 #----------------------------
 #--simple climate NH/SH model
 #----------------------------
-def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
+def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -149,7 +149,7 @@ def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C
 # C0 = deep-ocean heat capacity in W.yr.m-2.K-1
 # ndt = number of timesteps in 1 yr
 # dt = timestep in yr
-# noise = noise in T - needs to put a more realistic climate noise
+# Tnh_noise, Tsh_noise = noise in T
 # also noise is only on Tf, should we put noise on T0f as well ?
 #
 #--test sign geff 
@@ -181,15 +181,15 @@ def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C
      Ti_nh  = Tf_nh 
      T0i_nh = T0f_nh
   # add noise on final Tf
-  Tf_sh = Tf_sh + random.gauss(0.,noise)
-  Tf_nh = Tf_nh + random.gauss(0.,noise)
+  Tf_sh = Tf_sh + Tsh_noise
+  Tf_nh = Tf_nh + Tnh_noise
   return Tf_sh, Tf_nh, T0f_sh, T0f_nh
 #
 #-------------------------------
 #--simple climate NH/SH model v2
 #-------------------------------
 def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
-                  f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
+                  f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -240,7 +240,7 @@ def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
      Ti_nh  = Tf_nh 
      T0i_nh = T0f_nh
   # add noise on final Tf
-  Tf_sh = Tf_sh + random.gauss(0.,noise)
-  Tf_nh = Tf_nh + random.gauss(0.,noise)
+  Tf_sh = Tf_sh + Tsh_noise
+  Tf_nh = Tf_nh + Tnh_noise
   #--return outputs
   return Tf_sh, Tf_nh, T0f_sh, T0f_nh, gsh, gnh

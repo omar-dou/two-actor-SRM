@@ -1,15 +1,25 @@
 from simple_pid import PID
 import matplotlib.pyplot as plt
+import colorednoise as cn
 import numpy as np
 import random
+import argparse
+import sys
 from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, emi2aod, emi2rf, Monsoon
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--exp', type=str, default='4', help='experiment number')
+parser.add_argument('--noise', type=str, default='white', choices=['white','red','mixed'],help='Noise type')
+args = parser.parse_args()
+exp=args.exp
+noise_type=args.noise
 
 #--initialise PID controller for each actors
 #--PID(Kp, Ki, Kd, setpoint)
 #--Kp: proportional gain (typically for 0.8 for T target and 0.6 for monsoon target)
 #--Ki: integral gain (typically for 0.08 for T target and 0.06 for monsoon target)
 #--Kd: derivative gain (typically 0)
-#--type: NHT (NH temp), SHT (SH temp), monsoon
+#--type: GMST (global mean surf temp), NHST (NH surf temp), SHST (SH surf temp), monsoon
 #--setpoint: objective (temperature change in K, monsoon change in %)
 #--emimin, emimax: bounds of emissions (in TgS/yr)
 #--emipoints: emission points: 30N, 15N, Eq, 15S, 30S
@@ -32,41 +42,59 @@ volcano=True
 #--max GHG forcing
 fmax=4.0
 #--noise level
-noise_T=0.05       #--in K
+noise_T=0.15       #--in K
 noise_monsoon=10.  #--in % change
-#--experiment 
-exp="3"
+#
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
-#--single actor
+#--single actor in NH emitting in his own hemisphere
 if exp=="1a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-#--single actor emitting in opposite hemisphere
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--single actor in NH emitting in opposite hemisphere
 elif exp=="1b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
-#--single actor emitting in opposite hemisphere
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--single actor in SH emitting in opposite hemisphere
 elif exp=="1c":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
 #--two actors with each one injection point in same hemisphere
 elif exp=="2a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
 #--two actors with each one injection point in opposite hemisphere
 elif exp=="2b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-#--two actors with each two injection points
-elif exp=="3":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
+#--two actors who each have two injection points and same limits
+elif exp=="3a":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--two actors who each have two injection points and different limits
+elif exp=="3b":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':5.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--two actors with targets on NHST and monsoon
 elif exp=="4":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
   B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
+#--two actors with targets on GMST
 elif exp=="5":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHT',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--three actors
+elif exp=="6":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
   B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
   C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+else: 
+  sys.exit('This scenario is not parametrized')
 #
 #--Initialise properties of Actors
 P={'A':A}
@@ -81,7 +109,7 @@ title=''
 for Actor in Actors:
   title=title+' - '+Actor+' '+P[Actor]['type']+' '+str(P[Actor]['setpoint'])
   print(Actor,'=',P[Actor])
-print(title)
+print('Scenario title: ',title)
 #
 #--create a list of all emission points
 emipoints=[]
@@ -91,8 +119,8 @@ for Actor in Actors:
     #--if target type is monsoon, reverse sign of target for technical reason
     if P[Actor]['type']=='monsoon': P[Actor]['setpoint'] = -1.* P[Actor]['setpoint']
 print('List of emission points:', emipoints)
-markers={'30S':'v','15S':'v','Eq':'o','15N':'^','30N':'^'}
-sizes={'30S':30,'15S':15,'Eq':15,'15N':15,'30N':30}
+markers={'60S':'v','30S':'v','15S':'v','eq':'o','15N':'^','30N':'^','60N':'^',}
+sizes={'60S':30,'30S':30,'15S':15,'eq':10,'15N':15,'30N':30,'60N':30}
 colors={'A':'green','B':'orange','C':'purple'}
 #
 #--format float
@@ -110,6 +138,34 @@ f[150:]=np.linspace(fmax,3*fmax/4,50)
 if volcano:
    f[125]+=-2.0
    f[126]+=-1.0
+#
+#--time profiles of climate noise
+if noise_type=='white':
+  white_noise_T=cn.powerlaw_psd_gaussian(0,t5)*noise_T
+  Tnh_noise=white_noise_T
+  Tsh_noise=white_noise_T
+elif noise_type=='red':
+  Tnh_noise=cn.powerlaw_psd_gaussian(2,t5)*noise_T
+  Tsh_noise=cn.powerlaw_psd_gaussian(2,t5)*noise_T
+elif noise_type=='mixed':
+  white_noise_T=cn.powerlaw_psd_gaussian(0,t5)*noise_T/2.
+  red_noise_T=cn.powerlaw_psd_gaussian(0,t5)*noise_T/2.
+  Tnh_noise=white_noise_T+red_noise_T
+  red_noise_T=cn.powerlaw_psd_gaussian(0,t5)*noise_T/2.
+  Tsh_noise=white_noise_T+red_noise_T
+#--monsoon noise
+monsoon_noise=cn.powerlaw_psd_gaussian(0,t5)*noise_monsoon
+plt.plot(Tnh_noise,label='Tnh')
+plt.plot(Tsh_noise,label='Tsh')
+#plt.plot(monsoon_noise,label='Monsoon')
+plt.legend()
+plt.show()
+#
+#--time profiles of observation noise
+TSRM_noise_obs=np.random.normal(0,0.01,t5)
+TSRMnh_noise_obs=np.random.normal(0,0.01,t5)
+TSRMsh_noise_obs=np.random.normal(0,0.01,t5)
+monsoon_noise_obs=np.random.normal(0,1,t5)
 #
 #--define filename
 filename='test'+str(exp).zfill(2)+'.png'
@@ -139,7 +195,7 @@ for Actor in Actors:
   emissmax[Actor][t3:t4]=0
 #
 #--initialise more stuff
-T_SRM_sh=[] ; T_SRM_nh=[] ; T_noSRM_sh=[] ; T_noSRM_nh=[] ; g_SRM_sh=[] ; g_SRM_nh=[]
+T_SRM=[] ; T_SRM_sh=[] ; T_SRM_nh=[] ; T_noSRM=[] ; T_noSRM_sh=[] ; T_noSRM_nh=[] ; g_SRM_sh=[] ; g_SRM_nh=[]
 TnoSRMsh=0 ; T0noSRMsh=0 ; TnoSRMnh=0 ; T0noSRMnh=0
 TSRMsh=0   ; T0SRMsh=0   ; TSRMnh=0   ; T0SRMnh=0
 monsoon_SRM=[] ; monsoon_noSRM=[] 
@@ -149,9 +205,10 @@ for t in range(t0,t5):
   #
   #--reference calculation with no SRM 
   #-----------------------------------
-  TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh=clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,f=f[t],gnh=0,gsh=0,noise=noise_T)
-  T_noSRM_sh.append(TnoSRMsh) ; T_noSRM_nh.append(TnoSRMnh) 
-  monsoon=Monsoon(0.0,0.0,noise=noise_monsoon) ; monsoon_noSRM.append(monsoon)
+  TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh=clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,f=f[t],gnh=0,gsh=0,Tnh_noise=Tnh_noise[t],Tsh_noise=Tsh_noise[t])
+  TnoSRM=(TnoSRMnh+TnoSRMsh)/2. #--GMST
+  T_noSRM.append(TnoSRM) ; T_noSRM_sh.append(TnoSRMsh) ; T_noSRM_nh.append(TnoSRMnh) 
+  monsoon=Monsoon(0.0,0.0,noise=monsoon_noise[t]) ; monsoon_noSRM.append(monsoon)
   #
   #--calculation with SRM
   #----------------------
@@ -171,28 +228,30 @@ for t in range(t0,t5):
            emits[emipoint] = emi_SRM[Actor][emipoint]
   #
   #--iterate climate model
-  TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh=clim_sh_nh_v2(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,f=f[t],noise=noise_T)
+  TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh=clim_sh_nh_v2(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,\
+                                                      f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
+  TSRM=(TSRMsh+TSRMnh)/2. #--GMST
   #--compute monsoon change
-  monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=noise_monsoon)
+  monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=monsoon_noise[t])
   #
   #--report climate model output into lists for plots
-  T_SRM_sh.append(TSRMsh) ; T_SRM_nh.append(TSRMnh) ; g_SRM_sh.append(gsh) ; g_SRM_nh.append(gnh) ; monsoon_SRM.append(monsoon)
+  T_SRM.append(TSRM) ; T_SRM_sh.append(TSRMsh) ; T_SRM_nh.append(TSRMnh) ; g_SRM_sh.append(gsh) ; g_SRM_nh.append(gnh) ; monsoon_SRM.append(monsoon)
   #
   # compute new ouput from the PID according to the systems current value
   #--loop on emission points of Actor
   for Actor in Actors:
     for emipoint in P[Actor]['emipoints']:
        #--append the emission arrays
-       if P[Actor]['type']=='NHT':
-           #emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh+random.gauss(0,0.01),dt=1))
-           TSRMnh_withnoise=TSRMnh+random.gauss(0,0.01)
-           emi=PIDs[Actor][emipoint](TSRMnh_withnoise,dt=1)
-           emi_SRM[Actor][emipoint].append(emi)
-           print(Actor, emipoint, TSRMnh_withnoise, emi)
-       if P[Actor]['type']=='SHT':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+random.gauss(0,0.01),dt=1))
+       if P[Actor]['type']=='GMST':
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRM+TSRM_noise_obs[t],dt=1))
+       if P[Actor]['type']=='NHST':
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMnh+TSRMnh_noise_obs[t],dt=1))
+       if P[Actor]['type']=='SHST':
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+TSRMsh_noise_obs[t],dt=1))
        if P[Actor]['type']=='monsoon':
-           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+random.gauss(0,1),dt=1))
+           emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+monsoon_noise_obs[t],dt=1))
+           #emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+random.gauss(0,1),dt=1))
+  #print('')
 #
 #--change sign of emissions before plotting
 for Actor in Actors:
@@ -227,6 +286,7 @@ for Actor in Actors:
    for emipoint in P[Actor]['emipoints']:
        plt.plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
        plt.scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
+       plt.plot(-1*emissmin[Actor],linestyle='dashed',linewidth=0.5,c=colors[Actor])
 plt.legend(loc='upper left',fontsize=10)
 plt.ylabel('Emi (TgS yr$^{-1}$)',fontsize=10)
 plt.xlim(t0,t5)
