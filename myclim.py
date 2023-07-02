@@ -80,7 +80,7 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 #--------------------------------------
 def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
     #--Kleinschmitt et al ACP (2018)
-    #-- -10 Wm-2 per unit AOD (positive because our AODs are negative)
+    #-- -10 Wm-2 per unit AOD
     aod2rf = -10.0  
     AOD_SH, AOD_NH = emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
     return AOD_SH*aod2rf, AOD_NH*aod2rf
@@ -94,102 +94,11 @@ def Monsoon(AOD_SH,AOD_NH,noise):
     precip_change=-78.6*(AOD_NH-AOD_SH)-10.6 + noise
     return precip_change
 #
-#----------------------
-#--simple climate model
-#----------------------
-def clim(T,T0,f=1.,g=0.,geff=1.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, noise=0.05):
-# simple climate model from Eq 1 and 2 in Geoffroy et al 
-# https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
-# T = surface air temperature anomaly in K 
-# T0 = ocean temperature anomaly in K
-# f = GHG forcing in Wm-2 
-# g = applied SRM forcing in Wm-2
-# geff = efficacy of SRM forcing 
-# lam = lambda = feedback parameter Wm-2K-1
-# gamma = heat exchange coefficient in Wm-2K-1
-# C = atmosphere/land/upper-ocean heat capacity 
-# C0 = deep-ocean heat capacity in W.yr.m-2.K-1
-# ndt = number of timesteps in 1 yr
-# dt = timestep in yr
-# noise = noise in T - needs to put a more realistic climate noise
-# also noise is only on Tf, should we put noise on T0f as well ?
-#
-#--test sign geff 
-  if geff<0:
-    sys.exit('SRM efficacy geff has to be a positive number')
-#--discretize yearly timestep
-  dt = 1./float(ndt)
-#--initial T and TO
-  Ti = T ; T0i = T0
-# time loop
-  for i in range(ndt):
-     Tf  = Ti + dt/C*(f+geff*g-lam*Ti-gamma*(Ti-T0i))
-     T0f = T0i + dt/C0*gamma*(Ti-T0i)
-     Ti = Tf 
-     T0i = T0f
-# add noise on final Tf
-  Tf = Tf + random.gauss(0.,1.)*noise
-  return Tf, T0f
-#
 #----------------------------
 #--simple climate NH/SH model
 #----------------------------
-def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,f=1.,gnh=0.,gsh=0.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
-# simple climate model from Eq 1 and 2 in Geoffroy et al 
-# https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
-# Tnh,Tsh = surface air temperature anomaly in K 
-# T0nh,T0sh = ocean temperature anomaly in K
-# f = global GHG forcing in Wm-2 
-# gnh,gsh = applied hemispheric SRM forcing in Wm-2
-# geff = efficacy of SRM forcing 
-# lam = lambda = feedback parameter Wm-2K-1
-# gamma = heat exchange coefficient in Wm-2K-1
-# tau_nh_sh = timescale (yrs) of interhemispheric heat transfer
-# C = atmosphere/land/upper-ocean heat capacity 
-# C0 = deep-ocean heat capacity in W.yr.m-2.K-1
-# ndt = number of timesteps in 1 yr
-# dt = timestep in yr
-# Tnh_noise, Tsh_noise = noise in T
-# also noise is only on Tf, should we put noise on T0f as well ?
-#
-#--test sign geff 
-  if geff<0:
-    sys.exit('SRM efficacy geff has to be a positive number')
-  #--discretize yearly timestep
-  dt = 1./float(ndt)
-  #--initial T and TO
-  Ti_sh = Tsh ; T0i_sh = T0sh
-  Ti_nh = Tnh ; T0i_nh = T0nh
-  # time loop
-  for i in range(ndt):
-     #--sh
-     Tf_sh  = Ti_sh + dt/C*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
-     T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
-     #--nh
-     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
-     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
-     #--reducing inter-hemispheric T gradient
-     dT  = Tf_nh - Tf_sh
-     dT0 = T0f_nh - T0f_sh
-     Tf_sh = Tf_sh + dt/tau_nh_sh * dT
-     Tf_nh = Tf_nh - dt/tau_nh_sh * dT
-     T0f_sh = T0f_sh + dt/tau_nh_sh * dT0
-     T0f_nh = T0f_nh - dt/tau_nh_sh * dT0
-     #--preparing for next time substep
-     Ti_sh  = Tf_sh 
-     T0i_sh = T0f_sh
-     Ti_nh  = Tf_nh 
-     T0i_nh = T0f_nh
-  # add noise on final Tf
-  Tf_sh = Tf_sh + Tsh_noise
-  Tf_nh = Tf_nh + Tnh_noise
-  return Tf_sh, Tf_nh, T0f_sh, T0f_nh
-#
-#-------------------------------
-#--simple climate NH/SH model v2
-#-------------------------------
-def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
-                  f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
+def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
+               f=1.,geff=1.,tau_nh_sh=20.,C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
 # Tnh,Tsh = surface air temperature anomaly in K 
@@ -213,7 +122,7 @@ def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
   gsh,gnh=emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
   #--test sign geff 
   if geff<0:
-    sys.exit('SRM efficacy geff has to be a positive number')
+      sys.exit('SRM efficacy geff has to be a positive number')
   #--discretize yearly timestep
   dt = 1./float(ndt)
   #--initial T and TO
@@ -242,5 +151,7 @@ def clim_sh_nh_v2(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
   # add noise on final Tf
   Tf_sh = Tf_sh + Tsh_noise
   Tf_nh = Tf_nh + Tnh_noise
+  # GMST 
+  Tf = (Tf_sh+Tf_nh)/2.
   #--return outputs
-  return Tf_sh, Tf_nh, T0f_sh, T0f_nh, gsh, gnh
+  return Tf, Tf_sh, Tf_nh, T0f_sh, T0f_nh, gsh, gnh

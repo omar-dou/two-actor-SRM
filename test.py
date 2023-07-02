@@ -5,7 +5,7 @@ import numpy as np
 import random
 import argparse
 import sys
-from myclim import clim, clim_sh_nh, clim_sh_nh_v2, initialise_aod_responses, emi2aod, emi2rf, Monsoon
+from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp', type=str, default='4', help='experiment number')
@@ -16,8 +16,8 @@ noise_type=args.noise
 
 #--initialise PID controller for each actors
 #--PID(Kp, Ki, Kd, setpoint)
-#--Kp: proportional gain (typically for 0.8 for T target and 0.6 for monsoon target)
-#--Ki: integral gain (typically for 0.08 for T target and 0.06 for monsoon target)
+#--Kp: proportional gain (typically 0.8 (TgS/yr)/°C    for T target and 0.08 (TgS/yr)/% monsoon    for monsoon change target)
+#--Ki: integral gain     (typically 0.6 (TgS/yr)/°C/yr for T target and 0.06 (TgS/yr)/% monsoon/yr for monsoon change target)
 #--Kd: derivative gain (typically 0)
 #--type: GMST (global mean surf temp), NHST (NH surf temp), SHST (SH surf temp), monsoon
 #--setpoint: objective (temperature change in K, monsoon change in %)
@@ -84,8 +84,12 @@ elif exp=="4":
   B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
 #--two actors with targets on GMST
-elif exp=="5":
+elif exp=="5a":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
+#--two actors with targets on GMST
+elif exp=="5b":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':100,'t4':120}
   B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
 #--three actors
@@ -205,8 +209,8 @@ for t in range(t0,t5):
   #
   #--reference calculation with no SRM 
   #-----------------------------------
-  TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh=clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,f=f[t],gnh=0,gsh=0,Tnh_noise=Tnh_noise[t],Tsh_noise=Tsh_noise[t])
-  TnoSRM=(TnoSRMnh+TnoSRMsh)/2. #--GMST
+  TnoSRM, TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,gsh,gnh = clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,{},aod_strat_sh,aod_strat_nh,nbyr_irf,\
+                                                                     f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
   T_noSRM.append(TnoSRM) ; T_noSRM_sh.append(TnoSRMsh) ; T_noSRM_nh.append(TnoSRMnh) 
   monsoon=Monsoon(0.0,0.0,noise=monsoon_noise[t]) ; monsoon_noSRM.append(monsoon)
   #
@@ -228,9 +232,8 @@ for t in range(t0,t5):
            emits[emipoint] = emi_SRM[Actor][emipoint]
   #
   #--iterate climate model
-  TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh=clim_sh_nh_v2(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,\
-                                                      f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
-  TSRM=(TSRMsh+TSRMnh)/2. #--GMST
+  TSRM, TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh = clim_sh_nh(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,\
+                                                           f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
   #--compute monsoon change
   monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=monsoon_noise[t])
   #
@@ -250,8 +253,6 @@ for t in range(t0,t5):
            emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+TSRMsh_noise_obs[t],dt=1))
        if P[Actor]['type']=='monsoon':
            emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+monsoon_noise_obs[t],dt=1))
-           #emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+random.gauss(0,1),dt=1))
-  #print('')
 #
 #--change sign of emissions before plotting
 for Actor in Actors:
