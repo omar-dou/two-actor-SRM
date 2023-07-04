@@ -7,9 +7,11 @@ import argparse
 import sys
 from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon
 
+#--call script as: python test.py --exp=4 --noise=mixed
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp', type=str, default='4', help='experiment number')
-parser.add_argument('--noise', type=str, default='white', choices=['white','red','mixed'],help='Noise type')
+parser.add_argument('--noise', type=str, default='mixed', choices=['white','red','mixed'],help='Noise type')
 args = parser.parse_args()
 exp=args.exp
 noise_type=args.noise
@@ -44,6 +46,7 @@ fmax=4.0
 #--noise level
 noise_T=0.15       #--in K
 noise_monsoon=10.  #--in % change
+#noise_monsoon=1.  #--in % change
 #
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
 #--single actor in NH emitting in his own hemisphere
@@ -57,6 +60,10 @@ elif exp=="1b":
 #--single actor in SH emitting in opposite hemisphere
 elif exp=="1c":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+#
+#--single actor in SH emitting in opposite hemisphere
+elif exp=="1d":
+  A={'Kp':0.008,'Ki':0.006,'Kd':0.0,'type':'monsoon', 'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
 #--two actors with each one injection point in same hemisphere
 elif exp=="2a":
@@ -159,11 +166,6 @@ elif noise_type=='mixed':
   Tsh_noise=white_noise_T+red_noise_T
 #--monsoon noise
 monsoon_noise=cn.powerlaw_psd_gaussian(0,t5)*noise_monsoon
-plt.plot(Tnh_noise,label='Tnh')
-plt.plot(Tsh_noise,label='Tsh')
-#plt.plot(monsoon_noise,label='Monsoon')
-plt.legend()
-plt.show()
 #
 #--time profiles of observation noise
 TSRM_noise_obs=np.random.normal(0,0.01,t5)
@@ -172,7 +174,7 @@ TSRMsh_noise_obs=np.random.normal(0,0.01,t5)
 monsoon_noise_obs=np.random.normal(0,1,t5)
 #
 #--define filename
-filename='test'+str(exp).zfill(2)+'.png'
+filename='test'+exp+'.png'
 #
 #--define the PIDs and the emission min/max profiles
 PIDs={} ; emissmin={} ; emissmax={} ; emi_SRM={}
@@ -271,56 +273,75 @@ print('Mean and s.d. of monsoon w   SRM:',myformat.format(np.mean(monsoon_SRM[t2
 #
 #--basic plot with results
 title='Controlling global SAI'+title
-fig=plt.figure(figsize=(12,14))
+fig, axs = plt.subplots(3,2,figsize=(22,13))
+fig.suptitle(title,fontsize=16)
+plt.subplots_adjust(bottom=0.15)
 #
-plt.subplot(511)
-plt.title(title,fontsize=12)
-plt.plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
-plt.plot(f,label='GHG RF',c='red')
-plt.legend(loc='upper left',fontsize=10)
-plt.ylabel('RF (Wm$^{-2}$)',fontsize=10)
-plt.xlim(t0,t5)
-plt.xticks(np.arange(t0,t5+1,25),[])
+axs[0,0].plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
+axs[0,0].plot(f,label='GHG RF',c='red')
+axs[0,0].legend(loc='upper left',fontsize=12)
+axs[0,0].set_ylabel('RF (Wm$^{-2}$)',fontsize=14)
+axs[0,0].set_xlim(t0,t5)
+axs[0,0].set_xticks(np.arange(t0,t5+1,25),[])
+axs[0,0].tick_params(size=14)
+axs[0,0].tick_params(size=14)
 #
-plt.subplot(512)
+axs[0,1].plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
+axs[0,1].plot(Tnh_noise,label='NHST noise',c='black')
+axs[0,1].plot(Tsh_noise,label='SHST noise',c='green')
+axs[0,1].plot(monsoon_noise/100.,label='Monsoon noise',c='red')
+axs[0,1].legend(loc='lower right',fontsize=12)
+axs[0,1].set_ylabel('Noise level',fontsize=14)
+axs[0,1].set_xlim(t0,t5)
+axs[0,1].set_xticks(np.arange(t0,t5+1,25),[])
+axs[0,1].tick_params(size=14)
+axs[0,1].tick_params(size=14)
+#
 for Actor in Actors:
    for emipoint in P[Actor]['emipoints']:
-       plt.plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
-       plt.scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
-       plt.plot(-1*emissmin[Actor],linestyle='dashed',linewidth=0.5,c=colors[Actor])
-plt.legend(loc='upper left',fontsize=10)
-plt.ylabel('Emi (TgS yr$^{-1}$)',fontsize=10)
-plt.xlim(t0,t5)
-plt.xticks(np.arange(t0,t5+1,25),[])
+       axs[1,0].plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
+       axs[1,0].scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
+       axs[1,0].plot(-1*emissmin[Actor],linestyle='dashed',linewidth=0.5,c=colors[Actor])
+axs[1,0].legend(loc='upper left',fontsize=12)
+axs[1,0].set_ylabel('Emi (TgS yr$^{-1}$)',fontsize=14)
+axs[1,0].set_xlim(t0,t5)
+axs[1,0].set_xticks(np.arange(t0,t5+1,25),[])
+axs[1,0].tick_params(size=14)
+axs[1,0].tick_params(size=14)
 #
-plt.subplot(513)
-plt.plot(g_SRM_nh,label='NH SRM g',c='blue')
-plt.plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
-plt.legend(loc='upper left',fontsize=10)
-plt.ylabel('RF SRM (Wm$^{-2}$)',fontsize=10)
-plt.xlim(t0,t5)
-plt.xticks(np.arange(t0,t5+1,25),[])
+axs[1,1].plot(g_SRM_nh,label='NH SRM g',c='blue')
+axs[1,1].plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
+axs[1,1].legend(loc='upper left',fontsize=12)
+axs[1,1].set_ylabel('RF SRM (Wm$^{-2}$)',fontsize=14)
+axs[1,1].set_xlim(t0,t5)
+axs[1,1].set_xticks(np.arange(t0,t5+1,25),[])
+axs[1,1].tick_params(size=14)
+axs[1,1].tick_params(size=14)
 #
-plt.subplot(514)
-plt.plot(T_noSRM_nh,label='NH dT w/o SRM',c='red')
-plt.plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed')
-plt.plot(T_SRM_nh,label='NH dT w SRM',c='blue')
-plt.plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed')
-plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
-plt.legend(loc='upper left',fontsize=10)
-plt.ylabel('Temp. ($^\circ$C)',fontsize=10)
-plt.xlim(t0,t5)
-plt.xticks(np.arange(t0,t5+1,25),[])
+axs[2,0].plot(T_noSRM_nh,label='NH dT w/o SRM',c='red')
+axs[2,0].plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed')
+axs[2,0].plot(T_SRM_nh,label='NH dT w SRM',c='blue')
+axs[2,0].plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed')
+axs[2,0].plot([t0,t5],[0,0],c='black',linewidth=0.5)
+axs[2,0].legend(loc='upper left',fontsize=12)
+axs[2,0].set_xlabel('Years',fontsize=14)
+axs[2,0].set_ylabel('Temp. ($^\circ$C)',fontsize=14)
+axs[2,0].set_xlim(t0,t5)
+axs[2,0].set_xticks(np.arange(t0,t5+1,25))
+axs[2,0].tick_params(size=14)
+axs[2,0].tick_params(size=14)
 #
-plt.subplot(515)
-plt.plot(monsoon_noSRM,label='monsoon w/o SRM',c='red')
-plt.plot(monsoon_SRM,label='monsoon w SRM',c='blue')
-plt.plot([t0,t5],[0,0],c='black',linewidth=0.5)
-plt.legend(loc='lower left',fontsize=10)
-plt.xlabel('Years',fontsize=10)
-plt.ylabel('Monsoon (%)',fontsize=10)
-plt.xlim(t0,t5)
-plt.xticks(np.arange(t0,t5+1,25))
+axs[2,1].plot(monsoon_noSRM,label='monsoon w/o SRM',c='red')
+axs[2,1].plot(monsoon_SRM,label='monsoon w SRM',c='blue')
+axs[2,1].plot([t0,t5],[0,0],c='black',linewidth=0.5)
+axs[2,1].legend(loc='lower left',fontsize=12)
+axs[2,1].set_xlabel('Years',fontsize=14)
+axs[2,1].set_ylabel('Monsoon (%)',fontsize=14)
+axs[2,1].set_xlim(t0,t5)
+axs[2,1].set_xticks(np.arange(t0,t5+1,25))
+axs[2,1].tick_params(size=14)
+axs[2,1].tick_params(size=14)
 #
+fig.tight_layout()
+fig.savefig(dirout+filename)
 plt.show()
-plt.savefig(dirout+filename)
