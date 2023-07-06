@@ -89,6 +89,8 @@ elif exp=="3b":
 elif exp=="4":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
   B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  #--test
+  B={'Kp':0.08,'Ki':0.6,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
 #
 #--two actors with targets on GMST
 elif exp=="5a":
@@ -318,10 +320,10 @@ axs[1,1].set_xticks(np.arange(t0,t5+1,25),[])
 axs[1,1].tick_params(size=14)
 axs[1,1].tick_params(size=14)
 #
-axs[2,0].plot(T_noSRM_nh,label='NH dT w/o SRM',c='red')
-axs[2,0].plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed')
-axs[2,0].plot(T_SRM_nh,label='NH dT w SRM',c='blue')
-axs[2,0].plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed')
+axs[2,0].plot(T_noSRM_nh,label='NH dT w/o SRM',c='red',zorder=100)
+axs[2,0].plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed',zorder=100)
+axs[2,0].plot(T_SRM_nh,label='NH dT w SRM',c='blue',zorder=0)
+axs[2,0].plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed',zorder=0)
 axs[2,0].plot([t0,t5],[0,0],c='black',linewidth=0.5)
 axs[2,0].legend(loc='upper left',fontsize=12)
 axs[2,0].set_xlabel('Years',fontsize=14)
@@ -331,8 +333,8 @@ axs[2,0].set_xticks(np.arange(t0,t5+1,25))
 axs[2,0].tick_params(size=14)
 axs[2,0].tick_params(size=14)
 #
-axs[2,1].plot(monsoon_noSRM,label='monsoon w/o SRM',c='red')
-axs[2,1].plot(monsoon_SRM,label='monsoon w SRM',c='blue')
+axs[2,1].plot(monsoon_noSRM,label='monsoon w/o SRM',c='red',zorder=100)
+axs[2,1].plot(monsoon_SRM,label='monsoon w SRM',c='blue',zorder=0)
 axs[2,1].plot([t0,t5],[0,0],c='black',linewidth=0.5)
 axs[2,1].legend(loc='lower left',fontsize=12)
 axs[2,1].set_xlabel('Years',fontsize=14)
@@ -344,4 +346,4 @@ axs[2,1].tick_params(size=14)
 #
 fig.tight_layout()
 fig.savefig(dirout+filename)
-plt.show()
+#plt.show()

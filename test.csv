@@ -1,2 +1,0 @@
-KpA,KiA,KdA,KpB,KiB,KdB,setpointA,setpointB,emiAmin,emiAmax,emiBmin,emiBmax,t0,t1A,t2A,t3A,t4A,t1B,t2B,t3B,t4B,t5,fmax,noise
-0.8,0.6,0.0,0.8,0.6,0.0,0.0,-1.0,-20.0,0.0,-20.0,0.0,0,50,70,0,0,50,70,0,0,200,3.0,0.05 
