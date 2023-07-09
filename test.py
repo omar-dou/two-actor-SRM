@@ -20,7 +20,7 @@ noise_type=args.noise
 #--PID(Kp, Ki, Kd, setpoint)
 #--Kp: proportional gain (typically 0.8 (TgS/yr)/°C    for T target and 0.08 (TgS/yr)/% monsoon    for monsoon change target)
 #--Ki: integral gain     (typically 0.6 (TgS/yr)/°C/yr for T target and 0.06 (TgS/yr)/% monsoon/yr for monsoon change target)
-#--Kd: derivative gain (typically 0)
+#--Kd: derivative gain   (typically 0)
 #--type: GMST (global mean surf temp), NHST (NH surf temp), SHST (SH surf temp), monsoon
 #--setpoint: objective (temperature change in K, monsoon change in %)
 #--emimin, emimax: bounds of emissions (in TgS/yr)
@@ -28,15 +28,15 @@ noise_type=args.noise
 #--t0= start of model integration (in years)
 #--t1: start of ramping up SRM intervention
 #--t2: end of ramping up SRM intervention
-#--t3-t4: period of SRM interruption (use 0 and 0 not to stop)
-#--t5= time of end of SRM intervention (in years)
+#--t5: time of end of SRM intervention (in years)
+#--stops: periods of SRM interruption, list of tuples (t3,t4) and targets exceeded
 #--fmax: max value for GHG forcing (Wm-2)
 #--noise: noise level for T0 (in K)
 
 #--directory for plots
 dirout='plots/'
 #--show plots while running
-ltshow=True
+pltshow=True
 #--period 
 t0=0 ; t5=200
 #--volcano
@@ -51,61 +51,75 @@ noise_monsoon=10.  #--in % change
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
 #--single actor in NH emitting in his own hemisphere
 if exp=="1a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
 #
 #--single actor in NH emitting in opposite hemisphere
 elif exp=="1b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 #
 #--single actor in SH emitting in opposite hemisphere
 elif exp=="1c":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
 #
 #--single actor in SH emitting in opposite hemisphere
 elif exp=="1d":
-  A={'Kp':0.008,'Ki':0.006,'Kd':0.0,'type':'monsoon', 'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.008,'Ki':0.006,'Kd':0.0,'type':'monsoon', 'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 #
 #--two actors with each one injection point in same hemisphere
 elif exp=="2a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 #
 #--two actors with each one injection point in opposite hemisphere
 elif exp=="2b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
 #
 #--two actors who each have two injection points and same limits
 elif exp=="3a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'stops':[]}
 #
 #--two actors who each have two injection points and different limits
 elif exp=="3b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':5.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':5.0,'emipoints':['15S','15N'],'t1':50,'t2':70,'stops':[]}
 #
 #--two actors with targets on NHST and monsoon
-elif exp=="4":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
-  #--test
-  B={'Kp':0.08,'Ki':0.6,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
+elif exp=="4a":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'stops':[]}
+#--two actors with targets on NHST and monsoon and stops for B in monsoon target overshoot
+elif exp=="4b":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'stops':[5.0]}
 #
 #--two actors with targets on GMST
 elif exp=="5a":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
-#--two actors with targets on GMST
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
+#--two actors with targets on GMST and one stop for A
 elif exp=="5b":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':100,'t4':120}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(100,120)]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
+#--two actors with targets on GMST and multiple stops for A
+elif exp=="5c":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(100,110),(120,130),(140,150),(160,170)]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
+#--two actors with targets on GMST and stops for A if target overshoot
+elif exp=="5d":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[-0.1]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
+#--two actors with targets on GMST and multiple stops for A and B
+elif exp=="5e":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(100,110),(120,130),(140,150),(160,170)]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(110,120),(130,140),(150,160),(170,180)]}
 #
 #--three actors
 elif exp=="6":
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'t3':0,'t4':0}
-  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'t3':0,'t4':0}
-  C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'t3':0,'t4':0}
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'stops':[]}
+  C={'Kp':0.09,'Ki':0.05,'Kd':0.0,'type':'monsoon','setpoint':10.0,'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 else: 
   sys.exit('This scenario is not parametrized')
 #
@@ -192,15 +206,18 @@ for Actor in Actors:
     emi_SRM[Actor][emipoint]=[0.0]
   #--initialise the profile of emission min/max (emissions are counted negative)
   emimin=-1*P[Actor]['emimax'] ; emimax=-1*P[Actor]['emimin']
-  t1=P[Actor]['t1'] ; t2=P[Actor]['t2'] ; t3=P[Actor]['t3'] ; t4=P[Actor]['t4']
+  t1=P[Actor]['t1'] ; t2=P[Actor]['t2'] ; stops=P[Actor]['stops']
   emissmin[Actor]=np.zeros((t5))
   emissmax[Actor]=np.zeros((t5))
   emissmin[Actor][t1:t2]=np.linspace(0.0,emimin,t2-t1)
   emissmax[Actor][t1:t2]=np.linspace(0.0,emimax,t2-t1)
   emissmin[Actor][t2:]=emimin
   emissmax[Actor][t2:]=emimax
-  emissmin[Actor][t3:t4]=0
-  emissmax[Actor][t3:t4]=0
+  for stop in stops:
+     if type(stop)==type(()):
+       t3=stop[0] ; t4=stop[1]
+       emissmin[Actor][t3:t4]=0
+       emissmax[Actor][t3:t4]=0
 #
 #--initialise more stuff
 T_SRM=[] ; T_SRM_sh=[] ; T_SRM_nh=[] ; T_noSRM=[] ; T_noSRM_sh=[] ; T_noSRM_nh=[] ; g_SRM_sh=[] ; g_SRM_nh=[]
@@ -220,10 +237,6 @@ for t in range(t0,t5):
   #
   #--calculation with SRM
   #----------------------
-  #--setting limits on emissions for each Actor's PID
-  for Actor in Actors:
-    for emipoint in P[Actor]['emipoints']:
-      PIDs[Actor][emipoint].output_limits = (emissmin[Actor][t],emissmax[Actor][t])
   #
   #--prepare dictionary of combined emissions across all Actors
   emits={}
@@ -235,9 +248,10 @@ for t in range(t0,t5):
         else:
            emits[emipoint] = emi_SRM[Actor][emipoint]
   #
-  #--iterate climate model
+  #--iterate climate model with emits as input
   TSRM, TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,gsh,gnh = clim_sh_nh(TSRMsh,TSRMnh,T0SRMsh,T0SRMnh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf,\
                                                            f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
+  #
   #--compute monsoon change
   monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=monsoon_noise[t])
   #
@@ -247,7 +261,23 @@ for t in range(t0,t5):
   # compute new ouput from the PID according to the systems current value
   #--loop on emission points of Actor
   for Actor in Actors:
+    #--check for additional interactive stops
+    stops=[stop for stop in P[Actor]['stops'] if type(stop)==type(0.0)]
+    #--loop on emission points
     for emipoint in P[Actor]['emipoints']:
+       #--checking for additional interactive limits if target is overshoot => 5-yr stop in SRM
+       for stop in stops: 
+           if t > t1:
+               if P[Actor]['type']=='GMST' and TSRM <= stop: 
+                   emissmin[Actor][t:t+5]=0.0 ; emissmax[Actor][t:t+5]=0.0
+               if P[Actor]['type']=='NHST' and TSRMnh <= stop: 
+                   emissmin[Actor][t:t+5]=0.0 ; emissmax[Actor][t:t+5]=0.0
+               if P[Actor]['type']=='SHST' and TSRMsh <= stop: 
+                   emissmin[Actor][t:t+5]=0.0 ; emissmax[Actor][t:t+5]=0.0
+               if P[Actor]['type']=='monsoon' and monsoon >= -1*stop: 
+                   emissmin[Actor][t:t+5]=0.0 ; emissmax[Actor][t:t+5]=0.0 
+       #--setting limits on emissions for each Actor's PID
+       PIDs[Actor][emipoint].output_limits = (emissmin[Actor][t],emissmax[Actor][t])
        #--append the emission arrays
        if P[Actor]['type']=='GMST':
            emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRM+TSRM_noise_obs[t],dt=1))
@@ -346,4 +376,4 @@ axs[2,1].tick_params(size=14)
 #
 fig.tight_layout()
 fig.savefig(dirout+filename)
-#plt.show()
+if pltshow: plt.show()
