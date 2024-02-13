@@ -5,7 +5,7 @@ import numpy as np
 import random
 import argparse
 import sys
-from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon
+from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon, Monsoon_IPSL
 
 #--call script as: python test.py --exp=4 --noise=mixed
 
@@ -45,8 +45,11 @@ volcano=True
 fmax=4.0
 #--noise level
 noise_T=0.15       #--in K
-noise_monsoon=10.  #--in % change
+noise_monsoon=5.   #--in % change
 #noise_monsoon=1.  #--in % change
+#--interhemispheric timescales (in years)
+tau_nh_sh_upper=20.
+tau_nh_sh_lower=20.
 #
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
 #--single actor in NH emitting in his own hemisphere
@@ -65,7 +68,7 @@ elif exp=="1c":
 elif exp=="1d":
   A={'Kp':0.008,'Ki':0.006,'Kd':0.0,'type':'monsoon', 'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 #
-#--two actors with each one injection point in same hemisphere
+#--two actors with each one injection point in same hemisphere as their target
 elif exp=="2a":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
   B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'SHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
@@ -93,7 +96,7 @@ elif exp=="3b":
 #--two actors with targets on NHST and monsoon
 elif exp=="4a":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
-  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[]}
 #--two actors with targets on NHST and monsoon and stops for B in monsoon target overshoot
 elif exp=="4b":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
@@ -236,9 +239,11 @@ for t in range(t0,t5):
   #--reference calculation with no SRM 
   #-----------------------------------
   TnoSRM, TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,gsh,gnh = clim_sh_nh(TnoSRMsh,TnoSRMnh,T0noSRMsh,T0noSRMnh,{},aod_strat_sh,aod_strat_nh,nbyr_irf,\
-                                                                     f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
+                                                                     f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t], \
+                                                                     tau_nh_sh_upper=tau_nh_sh_upper,tau_nh_sh_lower=tau_nh_sh_lower)
   T_noSRM.append(TnoSRM) ; T_noSRM_sh.append(TnoSRMsh) ; T_noSRM_nh.append(TnoSRMnh) 
-  monsoon=Monsoon(0.0,0.0,noise=monsoon_noise[t]) ; monsoon_noSRM.append(monsoon)
+  ##monsoon=Monsoon(0.0,0.0,noise=monsoon_noise[t]) ; monsoon_noSRM.append(monsoon)
+  monsoon=Monsoon_IPSL(0.0,0.0,0.0,0.0,noise=monsoon_noise[t]) ; monsoon_noSRM.append(monsoon)
   #
   #--calculation with SRM
   #----------------------
@@ -258,7 +263,8 @@ for t in range(t0,t5):
                                                            f=f[t],Tsh_noise=Tsh_noise[t],Tnh_noise=Tnh_noise[t])
   #
   #--compute monsoon change
-  monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=monsoon_noise[t])
+  ##monsoon=Monsoon(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),noise=monsoon_noise[t])
+  monsoon=Monsoon_IPSL(*emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf),TSRMsh,TSRMnh,noise=monsoon_noise[t])
   #
   #--report climate model output into lists for plots
   T_SRM.append(TSRM) ; T_SRM_sh.append(TSRMsh) ; T_SRM_nh.append(TSRMnh) ; g_SRM_sh.append(gsh) ; g_SRM_nh.append(gnh) ; monsoon_SRM.append(monsoon)
@@ -319,7 +325,7 @@ axs[0,0].plot(f,label='GHG RF',c='red')
 axs[0,0].legend(loc='upper left',fontsize=12)
 axs[0,0].set_ylabel('RF (Wm$^{-2}$)',fontsize=14)
 axs[0,0].set_xlim(t0,t5)
-axs[0,0].set_xticks(np.arange(t0,t5+1,25),[])
+axs[0,0].set_xticks(np.arange(t0,t5+1,25))
 axs[0,0].tick_params(size=14)
 axs[0,0].tick_params(size=14)
 #
@@ -330,7 +336,7 @@ axs[0,1].plot(monsoon_noise/100.,label='Monsoon noise',c='red')
 axs[0,1].legend(loc='lower right',fontsize=12)
 axs[0,1].set_ylabel('Noise level',fontsize=14)
 axs[0,1].set_xlim(t0,t5)
-axs[0,1].set_xticks(np.arange(t0,t5+1,25),[])
+axs[0,1].set_xticks(np.arange(t0,t5+1,25))
 axs[0,1].tick_params(size=14)
 axs[0,1].tick_params(size=14)
 #
@@ -342,7 +348,7 @@ for Actor in Actors:
 axs[1,0].legend(loc='upper left',fontsize=12)
 axs[1,0].set_ylabel('Emi (TgS yr$^{-1}$)',fontsize=14)
 axs[1,0].set_xlim(t0,t5)
-axs[1,0].set_xticks(np.arange(t0,t5+1,25),[])
+axs[1,0].set_xticks(np.arange(t0,t5+1,25))
 axs[1,0].tick_params(size=14)
 axs[1,0].tick_params(size=14)
 #
@@ -351,7 +357,7 @@ axs[1,1].plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
 axs[1,1].legend(loc='upper left',fontsize=12)
 axs[1,1].set_ylabel('RF SRM (Wm$^{-2}$)',fontsize=14)
 axs[1,1].set_xlim(t0,t5)
-axs[1,1].set_xticks(np.arange(t0,t5+1,25),[])
+axs[1,1].set_xticks(np.arange(t0,t5+1,25))
 axs[1,1].tick_params(size=14)
 axs[1,1].tick_params(size=14)
 #
