@@ -3,13 +3,6 @@ import xarray as xr
 import numpy as np
 import sys
 #
-#--conversion factor from AOD to RF
-#--Kleinschmitt et al ACP (2018)
-#-- -10 Wm-2 per unit AOD on global average, less in the NH because of surface albedo
-aod2rf_NH = -8.0  
-aod2rf_SH = -12.0  
-aod2rf_GLOBE = (aod2rf_NH+aod2rf_SH)/2.0
-
 #-----------------------------------------------------
 #--routine to initialise the AOD response to emissions
 #-----------------------------------------------------
@@ -85,37 +78,25 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
 #--------------------------------------
 #--routine to compute RF from emissions
 #--------------------------------------
-def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
-    AOD_SH, AOD_NH = emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
-    return AOD_SH*aod2rf_SH, AOD_NH*aod2rf_NH
+def emi2rf(emits,aod_strat_sh,aod_strat_nh,nbyr_irf,aod2rf_sh=-10.0,aod2rf_nh=-10.0):
+    aod_sh, aod_nh = emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf)
+    return aod_sh*aod2rf_sh, aod_nh*aod2rf_nh
 #
 #--------------------------------
 #--routine to compute AOD from RF
 #--------------------------------
-def rf2aod(g,hem='globe'):
+def rf2aod(g,aod2rf_hem=-10.0):
     #--Kleinschmitt et al ACP (2018)
     #-- -10 Wm-2 per unit AOD on average, less in the NH because of surface albedo
-    if hem=='NH':
-      aod2rf = aod2rf_NH
-    elif hem=='SH':
-      aod2rf = aod2rf_SH
-    else: 
-      aod2rf = aod2rf_GLOBE
-    return g/aod2rf
+    return g/aod2rf_hem
 #
 #--------------------------------
 #--routine to compute AOD from RF
 #--------------------------------
-def aod2rf(aod,hem='globe'):
+def aod2rf(aod,aod2rf_hem=-10.0):
     #--Kleinschmitt et al ACP (2018)
     #-- -10 Wm-2 per unit AOD on average, less in the NH because of surface albedo
-    if hem=='NH':
-      rf2aod = 1./aod2rf_NH
-    elif hem=='SH':
-      rf2aod = 1./aod2rf_SH
-    else: 
-      rf2aod = 1./aod2rf_GLOBE
-    return aod/rf2aod
+    return aod*aod2rf_hem
 #
 #----------------
 #--monsoon precip 
@@ -236,6 +217,72 @@ def clim_sh_nh_from_rf(Tsh,Tnh,T0sh,T0nh,gsh,gnh,\
      #--nh
      Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
      T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
+     #--reducing inter-hemispheric T gradient
+     dT  = Tf_nh - Tf_sh
+     dT0 = T0f_nh - T0f_sh
+     Tf_sh = Tf_sh + dt/tau_nh_sh_upper * dT
+     Tf_nh = Tf_nh - dt/tau_nh_sh_upper * dT
+     T0f_sh = T0f_sh + dt/tau_nh_sh_lower * dT0
+     T0f_nh = T0f_nh - dt/tau_nh_sh_lower * dT0
+     #--preparing for next time substep
+     Ti_sh  = Tf_sh 
+     T0i_sh = T0f_sh
+     Ti_nh  = Tf_nh 
+     T0i_nh = T0f_nh
+  # add noise on final Tf
+  Tf_sh = Tf_sh + Tsh_noise
+  Tf_nh = Tf_nh + Tnh_noise
+  # GMST 
+  Tf = (Tf_sh+Tf_nh)/2.
+  #--return outputs
+  return Tf, Tf_sh, Tf_nh, T0f_sh, T0f_nh
+#
+#---------------------------------------
+#--simple climate NH/SH model from RF v2
+#---------------------------------------
+def clim_sh_nh_from_rf_v2(Tsh,Tnh,T0sh,T0nh,gsh,gnh,\
+               f=1.,geff=1.,tau_nh_sh_upper=20.,tau_nh_sh_lower=20., \
+               Csh=7.,Cnh=7,C0=100.,lambdash=1.,lambdanh=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
+# simple climate model from Eq 1 and 2 in Geoffroy et al 
+# https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
+# Tnh,Tsh = surface air temperature anomaly in K 
+# T0nh,T0sh = ocean temperature anomaly in K
+# gnh,gsh = applied hemispheric SRM forcing in Wm-2
+# f = global GHG forcing in Wm-2 
+# geff = efficacy of SRM forcing 
+# lambda nh/sh = feedback parameter Wm-2K-1
+# gamma = heat exchange coefficient between the two layers in Wm-2K-1
+# tau_nh_sh_upper = timescale (yrs) of interhemispheric heat transfer for upper ocean layer
+# tau_nh_sh_lower = timescale (yrs) of interhemispheric heat transfer for deep ocean layer
+# Csh / Cnh = hemispheric atmosphere/land/upper-ocean heat capacity 
+# C0 = deep-ocean heat capacity in W.yr.m-2.K-1
+# ndt = number of timesteps in 1 yr
+# dt = timestep in yr
+# noise = noise in T - needs to put a more realistic climate noise
+# also noise is only on Tf, should we put noise on T0f as well ?
+#
+  #--test sign geff 
+  if geff<0:
+      sys.exit('SRM efficacy geff has to be a positive number')
+  #--discretize yearly timestep
+  dt = 1./float(ndt)
+  #--initial T and TO
+  Ti_sh = Tsh ; T0i_sh = T0sh
+  Ti_nh = Tnh ; T0i_nh = T0nh
+  # time loop
+###  print('DEBUT',gsh,gnh)
+  for i in range(ndt):
+     #--sh
+     Tf_sh  = Ti_sh + dt/Csh*(f+geff*gsh-lambdash*Ti_sh-gamma*(Ti_sh-T0i_sh))
+###     print('Tf sh=',Tf_sh,Ti_sh,f,geff*gsh,-lambdash*Ti_sh,gamma*(Ti_sh-T0i_sh))
+     T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
+###     print('T0f sh=', T0f_sh , T0i_sh , dt/C0*gamma*(Ti_sh-T0i_sh))
+     #--nh
+     Tf_nh  = Ti_nh + dt/Cnh*(f+geff*gnh-lambdanh*Ti_nh-gamma*(Ti_nh-T0i_nh))
+###     print('Tf nh=',Tf_nh,Ti_nh,f,geff*gnh,-lambdanh*Ti_nh,gamma*(Ti_nh-T0i_nh))
+     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
+###     print('T0f nh=', T0f_nh , T0i_nh , dt/C0*gamma*(Ti_nh-T0i_nh))
+
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh
      dT0 = T0f_nh - T0f_sh
