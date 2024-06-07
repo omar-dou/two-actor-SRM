@@ -7,8 +7,9 @@ import sys
 #--routine to initialise the AOD response to emissions
 #-----------------------------------------------------
 def initialise_aod_responses():
-   #--data
+   #--location of S3A data
    #dirin="/thredds/tgcc/store/oboucher/S3A/"
+   #dirin="../GCMdata/"
    dirin="/data/oboucher/S3A/"
    #--experiments 
    exps=['eq','15S','15N','30S','30N','60S','60N']
@@ -117,7 +118,7 @@ def Monsoon_IPSL(AOD_SH,AOD_NH,T_SH,T_NH,noise):
 #--simple climate NH/SH model
 #----------------------------
 def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
-               f=1.,geff=1.,tau_nh_sh_upper=20.,tau_nh_sh_lower=20., \
+               f=1.,geff=1.,tau_nh_sh_upper=10.,tau_nh_sh_lower=20., \
                C=7.,C0=100.,lam=1.,gamma=0.7, ndt=10, Tnh_noise=0, Tsh_noise=0):
 # simple climate model from Eq 1 and 2 in Geoffroy et al 
 # https://journals.ametsoc.org/doi/pdf/10.1175/JCLI-D-12-00195.1
@@ -149,13 +150,17 @@ def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
   #--initial T and TO
   Ti_sh = Tsh ; T0i_sh = T0sh
   Ti_nh = Tnh ; T0i_nh = T0nh
+  #--ocean fractions (NH/SH/globe)
+  ocf_nh=0.6
+  ocf_sh=0.8
+  ocf=(ocf_sh+ocf_nh)/2.
   # time loop
   for i in range(ndt):
-     #--sh
-     Tf_sh  = Ti_sh + dt/C*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
+     #--sh, accounting for the larger ocean fraction in SH
+     Tf_sh  = Ti_sh + dt/(C*ocf_sh/ocf)*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
      T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
-     #--nh
-     Tf_nh  = Ti_nh + dt/C*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
+     #--nh, accounting for the smaller ocean fraction in NH
+     Tf_nh  = Ti_nh + dt/(C*ocf_nh/ocf)*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
      T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh

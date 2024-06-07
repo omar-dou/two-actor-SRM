@@ -101,7 +101,10 @@ elif exp=="4a":
 elif exp=="4b":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
   B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['30S'],'t1':50,'t2':70,'stops':[5.0]}
-#
+#--two actors with targets on NHST and monsoon and B starts only on year 30 due to worsening of the monsoon
+elif exp=="4c":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',   'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.08,'Ki':0.06,'Kd':0.0,'type':'monsoon','setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15S'],'t1':50,'t2':70,'stops':[(50,80)]}
 #--two actors with same targets on GMST
 elif exp=="5a":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[]}
@@ -122,7 +125,10 @@ elif exp=="5d":
 elif exp=="5e":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(100,110),(120,130),(140,150),(160,170)]}
   B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(110,120),(130,140),(150,160),(170,180)]}
-#
+#--two actors with targets on GMST and multiple (diff length) stops for A and B
+elif exp=="5f":
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(100,115),(130,145),(160,175)]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'GMST','setpoint':0.0,'emimin':0.0,'emimax':10.0,'emipoints':['eq'],'t1':50,'t2':70,'stops':[(115,130),(145,160)]}#
 #--three actors
 elif exp=="6":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
