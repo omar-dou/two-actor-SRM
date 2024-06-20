@@ -275,19 +275,13 @@ def clim_sh_nh_from_rf_v2(Tsh,Tnh,T0sh,T0nh,gsh,gnh,\
   Ti_sh = Tsh ; T0i_sh = T0sh
   Ti_nh = Tnh ; T0i_nh = T0nh
   # time loop
-###  print('DEBUT',gsh,gnh)
   for i in range(ndt):
      #--sh
      Tf_sh  = Ti_sh + dt/Csh*(f+geff*gsh-lambdash*Ti_sh-gamma*(Ti_sh-T0i_sh))
-###     print('Tf sh=',Tf_sh,Ti_sh,f,geff*gsh,-lambdash*Ti_sh,gamma*(Ti_sh-T0i_sh))
      T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
-###     print('T0f sh=', T0f_sh , T0i_sh , dt/C0*gamma*(Ti_sh-T0i_sh))
      #--nh
      Tf_nh  = Ti_nh + dt/Cnh*(f+geff*gnh-lambdanh*Ti_nh-gamma*(Ti_nh-T0i_nh))
-###     print('Tf nh=',Tf_nh,Ti_nh,f,geff*gnh,-lambdanh*Ti_nh,gamma*(Ti_nh-T0i_nh))
      T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
-###     print('T0f nh=', T0f_nh , T0i_nh , dt/C0*gamma*(Ti_nh-T0i_nh))
-
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh
      dT0 = T0f_nh - T0f_sh

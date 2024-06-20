@@ -5,6 +5,7 @@ import numpy as np
 import random
 import argparse
 import sys
+import os
 from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon, Monsoon_IPSL
 
 #--call script as: python test.py --exp=4 --noise=mixed
@@ -35,6 +36,7 @@ noise_type=args.noise
 
 #--directory for plots
 dirout='plots/'
+if not os.path.exists(dirout): os.makedirs(dirout)
 #--show plots while running
 pltshow=True
 #--period 
