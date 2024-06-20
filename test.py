@@ -10,7 +10,7 @@ from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoo
 #--call script as: python test.py --exp=4 --noise=mixed
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--exp', type=str, default='4', help='experiment number')
+parser.add_argument('--exp', type=str, default='4a', help='experiment number')
 parser.add_argument('--noise', type=str, default='mixed', choices=['white','red','mixed'],help='Noise type')
 args = parser.parse_args()
 exp=args.exp

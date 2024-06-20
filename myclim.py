@@ -158,10 +158,10 @@ def clim_sh_nh(Tsh,Tnh,T0sh,T0nh,emits,aod_strat_sh,aod_strat_nh,nbyr_irf, \
   for i in range(ndt):
      #--sh, accounting for the larger ocean fraction in SH
      Tf_sh  = Ti_sh + dt/(C*ocf_sh/ocf)*(f+geff*gsh-lam*Ti_sh-gamma*(Ti_sh-T0i_sh))
-     T0f_sh = T0i_sh + dt/C0*gamma*(Ti_sh-T0i_sh)
+     T0f_sh = T0i_sh + dt/(C0*ocf_sh/ocf)*gamma*(Ti_sh-T0i_sh)
      #--nh, accounting for the smaller ocean fraction in NH
      Tf_nh  = Ti_nh + dt/(C*ocf_nh/ocf)*(f+geff*gnh-lam*Ti_nh-gamma*(Ti_nh-T0i_nh))
-     T0f_nh = T0i_nh + dt/C0*gamma*(Ti_nh-T0i_nh)
+     T0f_nh = T0i_nh + dt/(C0*ocf_nh/ocf)*gamma*(Ti_nh-T0i_nh)
      #--reducing inter-hemispheric T gradient
      dT  = Tf_nh - Tf_sh
      dT0 = T0f_nh - T0f_sh
