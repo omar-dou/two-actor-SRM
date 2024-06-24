@@ -10,7 +10,7 @@ def initialise_aod_responses():
    #--location of S3A data
    #dirin="/thredds/tgcc/store/oboucher/S3A/"
    #dirin="../GCMdata/"
-   dirin="/data/oboucher/S3A/"
+   dirin="/Users/omar/Downloads/data"
    #--experiments 
    exps=['eq','15S','15N','30S','30N','60S','60N']
    #--pulse injection 
