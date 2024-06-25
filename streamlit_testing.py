@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 import base64
-
 def add_bg_from_local(image_file):
     with open(image_file, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read())
@@ -18,6 +17,11 @@ def add_bg_from_local(image_file):
     )
 add_bg_from_local('/Users/omar/Documents/yemoun.jpg')    
 
+
+if 'counter' not in st.session_state: 
+    st.session_state.counter = 0
+
+col1,col2 = st.columns(2)
 # Define page states
 PAGES = {
     "Home": "home",
@@ -48,7 +52,20 @@ def main():
         st.image('/Users/omar/Documents/Instagram_icon.png')
 
 
+
+    # if st.button("Begin"):
+    #     loading_text = st.empty()
+    #     loading_image = st.empty()
+    #     loading_text.write('Loading...')
+    #     loading_image.image('/Users/omar/Documents/loaded.gif')
+    #     time.sleep(2)        
+    #     loading_text.empty()
+    #     loading_image.empty()
+    #     loading_image.image('/Users/omar/Documents/' + next(imagelist))
+    imagelist = ['Instagram_icon.png', 'farm.jpg']
+
     if st.button("Begin"):
+        bob = int(st.session_state.counter)
         loading_text = st.empty()
         loading_image = st.empty()
         loading_text.write('Loading...')
@@ -56,12 +73,14 @@ def main():
         time.sleep(2)        
         loading_text.empty()
         loading_image.empty()
-        loading_image.image('/Users/omar/Documents/farm.jpg')
+        loading_image.image('/Users/omar/Documents/' + imagelist[bob])
+        
+        st.session_state.counter += 1
+        if st.session_state.counter >= len(imagelist):
+            st.session_state.counter = 0
+        else:
+            pass
 
-
-
-    else:
-        pass
 
 
 
