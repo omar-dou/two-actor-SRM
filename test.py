@@ -7,6 +7,10 @@ import argparse
 import sys
 import os
 from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon, Monsoon_IPSL
+from matplotlib.widgets import Button
+from matplotlib.figure import Figure
+import numpy as np
+
 
 #--call script as: python test.py --exp=4 --noise=mixed
 
@@ -395,4 +399,30 @@ axs[2,1].tick_params(size=14)
 #
 fig.tight_layout()
 fig.savefig(dirout+filename)
+
+import itertools
+colors = itertools.cycle(['red', 'green', 'blue'])
+green = 0.1
+red = 0.1 
+blue = 0.1
+class Index:
+  def __init__(self):
+    self.counter = 0  # Initialize counter to keep track of 'O's added
+  
+  def next(self, event):
+    self.counter += 0.1  # Increment counter on each click
+    bnext.color = (0.1, self.counter, 0.1)
+    if self.counter > 1:
+       self.counter = 0.1
+    fig.canvas.draw()
+
+
+callback = Index()
+axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
+
+bnext = Button(axnext, 'HELLO!', color = (red, green, blue))
+bnext.on_clicked(callback.next)
+
+
+
 if pltshow: plt.show()
