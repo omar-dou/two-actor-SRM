@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import base64
+import test as t
 def add_bg_from_local(image_file):
     with open(image_file, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read())
@@ -17,74 +18,56 @@ def add_bg_from_local(image_file):
     )
 add_bg_from_local('/Users/omar/Documents/yemoun.jpg')    
 
+# if 'counter' not in st.session_state: 
+#     st.session_state.counter = 0
 
-if 'counter' not in st.session_state: 
-    st.session_state.counter = 0
+# def main():
+#     imagelist = ['Instagram_icon.png', 'farm.jpg']
 
-col1,col2 = st.columns(2)
+#     if st.button("Begin"):
+#         bob = int(st.session_state.counter)
+#         loading_text = st.empty()
+#         loading_image = st.empty()
+#         loading_text.write('Loading...')
+#         loading_image.image('/Users/omar/Documents/loaded.gif')
+#         time.sleep(2)        
+#         loading_text.empty()
+#         loading_image.empty()
+#         loading_image.image('/Users/omar/Documents/' + imagelist[bob])
+        
+#         st.session_state.counter += 1
+#         if st.session_state.counter >= len(imagelist):
+#             st.session_state.counter = 0
+#         else:
+#             pass
+
+# import streamlit as st
 # Define page states
 PAGES = {
     "Home": "home",
     "Second Page": "second_page",
     "Third Page": "third_page",
-    "Next Button": "next_button"  # Define the Next Button page
+    "Fourth Page": "fourth_page",
+    "Next": "next_button"
 }
 
 def main():
-    st.title("TEST")
-
-
-
 
     # Use columns to organize layout
     col1, col2 = st.columns(2)
 
     with col1:
-        st.header("THIS IS A TEST PAGE.")
+        st.header("We are glad to have you here.")
         st.write("""
-        This is a TEST.
+        This is a place where you will be asked to give some time to aid the environment.
+        We hope that is ok with you. Please do enjoy your stay.
         """)
 
         if st.button("Get Started"):
             st.session_state.page = PAGES["Second Page"]  # Set page state to Second Page upon button click
 
     with col2:
-        st.image('/Users/omar/Documents/Instagram_icon.png')
-
-
-
-    # if st.button("Begin"):
-    #     loading_text = st.empty()
-    #     loading_image = st.empty()
-    #     loading_text.write('Loading...')
-    #     loading_image.image('/Users/omar/Documents/loaded.gif')
-    #     time.sleep(2)        
-    #     loading_text.empty()
-    #     loading_image.empty()
-    #     loading_image.image('/Users/omar/Documents/' + next(imagelist))
-    imagelist = ['Instagram_icon.png', 'farm.jpg']
-
-    if st.button("Begin"):
-        bob = int(st.session_state.counter)
-        loading_text = st.empty()
-        loading_image = st.empty()
-        loading_text.write('Loading...')
-        loading_image.image('/Users/omar/Documents/loaded.gif')
-        time.sleep(2)        
-        loading_text.empty()
-        loading_image.empty()
-        loading_image.image('/Users/omar/Documents/' + imagelist[bob])
-        
-        st.session_state.counter += 1
-        if st.session_state.counter >= len(imagelist):
-            st.session_state.counter = 0
-        else:
-            pass
-
-
-
-
-
+        st.image("/Users/omar/Documents/loaded.gif", caption="Our Logo")
 
     # Sidebar with more information
     st.sidebar.title("About Us")
@@ -101,71 +84,92 @@ def main():
         second_page()
     
     if st.session_state.page == PAGES["Third Page"]:
-         third_page()
+        third_page()
+
+    if st.session_state.page == PAGES["Fourth Page"]:
+        fourth_page()
 
 def second_page():
     st.title("Selection Task #1")
-    st.write("Please select an area to protect.")
+    st.write("Please select a topic(s) to test.")
 
-    # Use session state to track if a region button is clicked
-    if "region_selected" not in st.session_state:
-        st.session_state.region_selected = False
+    # Use session state to track selected regions
+    if "selected_regions" not in st.session_state:
+        st.session_state.selected_regions = []
 
-    # Display region selection buttons or selected region
-    if not st.session_state.region_selected:
-        if st.button("Northern Hemisphere"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Northern Hemisphere"
+    # Display region selection checkboxes
+    regions = ["Northern Hemisphere", "Southern Hemisphere", "Global Temperature", "Monsoon Levels"]
 
-        elif st.button("Southern Hemisphere"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Southern Hemisphere"
+    for region in regions:
+        if st.checkbox(region, key=region):
+            if region not in st.session_state.selected_regions:
+                st.session_state.selected_regions.append(region)
+        else:
+            if region in st.session_state.selected_regions:
+                st.session_state.selected_regions.remove(region)
 
-        elif st.button("Global Temperature"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Global Temperature"
-
-        elif st.button("Monsoon Levels"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Monsoon Levels"
-
-    # Display selected region and "Next Button" if a region is selected
-    if st.session_state.region_selected:
-        st.write(f"You selected: {st.session_state.selected_region}")
-        if st.button("Next Button"):
+    # Display selected regions and "Next Button" if any region is selected
+    if st.session_state.selected_regions:
+        st.write(f"You selected: {', '.join(st.session_state.selected_regions)}")
+        if st.button("Next"):
             st.session_state.page = PAGES["Third Page"]
 
 def third_page():
     st.title("Selection Task #2")
-    st.write("Please select an angle.")
+    st.write("Please select a loocation.")
     
-    # Use session state to track if a region button is clicked
-    if "angle_selected" not in st.session_state:
-        st.session_state.angle_selected = False
+    if "tlocations" not in st.session_state:
+        st.session_state.tlocations = []
 
-    # Display region selection buttons or selected region
-    if not st.session_state.region_selected:
-        if st.button("15°N"):
-            st.session_state.angle_selected = True
-            st.session_state.angle_selected = "Northern Hemisphere"
+    # Display region selection checkboxes
+    test_locations = ["15N", "30N", "60N", "eq", "60S", "30S", "15S"]
 
-        elif st.button("30°N"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Southern Hemisphere"
+    for location in test_locations:
+        if st.checkbox(location, key=location):
+            if location not in st.session_state.tlocations:
+                st.session_state.tlocations.append(location)
+        else:
+            if location in st.session_state.tlocations:
+                st.session_state.tlocations.remove(location)
 
-        elif st.button("60°N"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Global Temperature"
+    # Display selected angle and "Next Button" if an angle is selected
+    if st.session_state.tlocations:
+        st.write(f"You selected: {', '.join(st.session_state.tlocations)}")
+        if st.button("Next"):
+            st.session_state.page = PAGES["Fourth Page"]
+    t.emipoints = st.session_state.tlocations
 
-        elif st.button("15°S"):
-            st.session_state.region_selected = True
-            st.session_state.selected_region = "Monsoon Levels"
+def fourth_page():
+    st.set_option('deprecation.showPyplotGlobalUse', False)
+    st.title("Your Results")
+    st.write(f"You selecteed: {', '.join(st.session_state.selected_regions)} and {', '.join(st.session_state.tlocations)}")
+    st.write("To be implemented...")
+    t.emipoints = st.session_state.tlocations
 
-    # Display selected region and "Next Button" if a region is selected
-    if st.session_state.region_selected:
-        st.write(f"You selected: {st.session_state.selected_region}")
-        if st.button("Next Button"):
-            st.session_state.page = PAGES["Third Page"]
+    fig = t.graph6()
+    #st.title(f"Fig: {fig}")
+
+    # Display the plot using Streamlit
+    st.pyplot(fig)
+    fig = t.graph1()
+    st.pyplot(fig)
+
+
+    fig = t.graph2()
+    st.pyplot(fig)
+
+    fig = t.graph3()
+    st.pyplot(fig)
+
+    fig = t.graph4()
+    st.pyplot(fig)
+
+    fig = t.graph5()
+    st.pyplot(fig)
+
+
+    st.title(f"Emipoints: {t.emipoints}")
+
 
 if __name__ == "__main__":
     main()

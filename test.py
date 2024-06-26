@@ -59,6 +59,8 @@ tau_nh_sh_lower=20.
 #
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
 #--single actor in NH emitting in his own hemisphere
+
+
 if exp=="1a":
   A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':'NHST',    'setpoint':0.0, 'emimin':0.0,'emimax':10.0,'emipoints':['15N'],'t1':50,'t2':70,'stops':[]}
 #
@@ -169,6 +171,7 @@ print('List of emission points:', emipoints)
 markers={'60S':'v','30S':'v','15S':'v','eq':'o','15N':'^','30N':'^','60N':'^',}
 sizes={'60S':30,'30S':30,'15S':15,'eq':10,'15N':15,'30N':30,'60N':30}
 colors={'A':'green','B':'orange','C':'purple'}
+emipoints = ['60N', "30S", '15N', 'eq', "15S", "30N", "60S"]
 #
 #--format float
 myformat="{0:3.1f}"
@@ -328,101 +331,112 @@ print('Mean and s.d. of monsoon w   SRM:',myformat.format(np.mean(monsoon_SRM[t2
 #
 #--basic plot with results
 title='Controlling global SAI'+title
-fig, axs = plt.subplots(3,2,figsize=(22,13))
-fig.suptitle(title,fontsize=16)
-plt.subplots_adjust(bottom=0.15)
-#
-axs[0,0].plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
-axs[0,0].plot(f,label='GHG RF',c='red')
-axs[0,0].legend(loc='upper left',fontsize=12)
-axs[0,0].set_ylabel('RF (Wm$^{-2}$)',fontsize=14)
-axs[0,0].set_xlim(t0,t5)
-axs[0,0].set_xticks(np.arange(t0,t5+1,25))
-axs[0,0].tick_params(size=14)
-axs[0,0].tick_params(size=14)
-#
-axs[0,1].plot([t0,t5],[0,0],zorder=0,linewidth=0.4)
-axs[0,1].plot(Tnh_noise,label='NHST noise',c='black')
-axs[0,1].plot(Tsh_noise,label='SHST noise',c='green')
-axs[0,1].plot(monsoon_noise/100.,label='Monsoon noise',c='red')
-axs[0,1].legend(loc='lower right',fontsize=12)
-axs[0,1].set_ylabel('Noise level',fontsize=14)
-axs[0,1].set_xlim(t0,t5)
-axs[0,1].set_xticks(np.arange(t0,t5+1,25))
-axs[0,1].tick_params(size=14)
-axs[0,1].tick_params(size=14)
-#
-for Actor in Actors:
-   for emipoint in P[Actor]['emipoints']:
-       axs[1,0].plot(emi_SRM[Actor][emipoint],linestyle='solid',c=colors[Actor])
-       axs[1,0].scatter(range(t0,t5+1,10),emi_SRM[Actor][emipoint][::10],label='Emissions '+Actor+' '+emipoint,c=colors[Actor],marker=markers[emipoint],s=sizes[emipoint])
-       axs[1,0].plot(-1*emissmin[Actor],linestyle='dashed',linewidth=0.5,c=colors[Actor])
-axs[1,0].legend(loc='upper left',fontsize=12)
-axs[1,0].set_ylabel('Emi (TgS yr$^{-1}$)',fontsize=14)
-axs[1,0].set_xlim(t0,t5)
-axs[1,0].set_xticks(np.arange(t0,t5+1,25))
-axs[1,0].tick_params(size=14)
-axs[1,0].tick_params(size=14)
-#
-axs[1,1].plot(g_SRM_nh,label='NH SRM g',c='blue')
-axs[1,1].plot(g_SRM_sh,label='SH SRM g',c='blue',linestyle='dashed')
-axs[1,1].legend(loc='upper left',fontsize=12)
-axs[1,1].set_ylabel('RF SRM (Wm$^{-2}$)',fontsize=14)
-axs[1,1].set_xlim(t0,t5)
-axs[1,1].set_xticks(np.arange(t0,t5+1,25))
-axs[1,1].tick_params(size=14)
-axs[1,1].tick_params(size=14)
-#
-axs[2,0].plot(T_noSRM_nh,label='NH dT w/o SRM',c='red',zorder=100)
-axs[2,0].plot(T_noSRM_sh,label='SH dT w/o SRM',c='red',linestyle='dashed',zorder=100)
-axs[2,0].plot(T_SRM_nh,label='NH dT w SRM',c='blue',zorder=0)
-axs[2,0].plot(T_SRM_sh,label='SH dT w SRM',c='blue',linestyle='dashed',zorder=0)
-axs[2,0].plot([t0,t5],[0,0],c='black',linewidth=0.5)
-axs[2,0].legend(loc='upper left',fontsize=12)
-axs[2,0].set_xlabel('Years',fontsize=14)
-axs[2,0].set_ylabel('Temp. ($^\circ$C)',fontsize=14)
-axs[2,0].set_xlim(t0,t5)
-axs[2,0].set_xticks(np.arange(t0,t5+1,25))
-axs[2,0].tick_params(size=14)
-axs[2,0].tick_params(size=14)
-#
-axs[2,1].plot(monsoon_noSRM,label='monsoon w/o SRM',c='red',zorder=100)
-axs[2,1].plot(monsoon_SRM,label='monsoon w SRM',c='blue',zorder=0)
-axs[2,1].plot([t0,t5],[0,0],c='black',linewidth=0.5)
-axs[2,1].legend(loc='lower left',fontsize=12)
-axs[2,1].set_xlabel('Years',fontsize=14)
-axs[2,1].set_ylabel('Monsoon (%)',fontsize=14)
-axs[2,1].set_xlim(t0,t5)
-axs[2,1].set_xticks(np.arange(t0,t5+1,25))
-axs[2,1].tick_params(size=14)
-axs[2,1].tick_params(size=14)
-#
-fig.tight_layout()
-fig.savefig(dirout+filename)
 
-import itertools
-colors = itertools.cycle(['red', 'green', 'blue'])
-green = 0.1
-red = 0.1 
-blue = 0.1
-class Index:
-  def __init__(self):
-    self.counter = 0  # Initialize counter to keep track of 'O's added
-  
-  def next(self, event):
-    self.counter += 0.1  # Increment counter on each click
-    bnext.color = (0.1, self.counter, 0.1)
-    if self.counter > 1:
-       self.counter = 0.1
-    fig.canvas.draw()
+# Function to create the first plot
+def graph1():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    ax.plot([t0, t5], [0, 0], zorder=0, linewidth=0.4)
+    ax.plot(f, label='GHG RF', c='red')
+    ax.legend(loc='upper left', fontsize=12)
+    ax.set_ylabel('RF (Wm$^{-2}$)', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph1_' + filename)
+    return fig
 
+# Function to create the second plot
+def graph2():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    ax.plot([t0, t5], [0, 0], zorder=0, linewidth=0.4)
+    ax.plot(Tnh_noise, label='NHST noise', c='black')
+    ax.plot(Tsh_noise, label='SHST noise', c='green')
+    ax.plot(monsoon_noise / 100., label='Monsoon noise', c='red')
+    ax.legend(loc='lower right', fontsize=12)
+    ax.set_ylabel('Noise level', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph2_' + filename)
+    return fig
 
-callback = Index()
-axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
+# Function to create the third plot
+def graph3():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    for Actor in Actors:
+        for emipoint in P[Actor]['emipoints']:
+            ax.plot(emi_SRM[Actor][emipoint], linestyle='solid', c=colors[Actor])
+            ax.scatter(range(t0, t5+1, 10), emi_SRM[Actor][emipoint][::10], label='Emissions '+Actor+' '+emipoint, c=colors[Actor], marker=markers[emipoint], s=sizes[emipoint])
+            ax.plot(-1 * emissmin[Actor], linestyle='dashed', linewidth=0.5, c=colors[Actor])
+    ax.legend(loc='upper left', fontsize=12)
+    ax.set_ylabel('Emi (TgS yr$^{-1}$)', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph3_' + filename)
+    return fig
 
-bnext = Button(axnext, 'HELLO!', color = (red, green, blue))
-bnext.on_clicked(callback.next)
+# Function to create the fourth plot
+def graph4():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    ax.plot(g_SRM_nh, label='NH SRM g', c='blue')
+    ax.plot(g_SRM_sh, label='SH SRM g', c='blue', linestyle='dashed')
+    ax.legend(loc='upper left', fontsize=12)
+    ax.set_ylabel('RF SRM (Wm$^{-2}$)', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph4_' + filename)
+    return fig
 
+# Function to create the fifth plot
+def graph5():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    ax.plot(T_noSRM_nh, label='NH dT w/o SRM', c='red', zorder=100)
+    ax.plot(T_noSRM_sh, label='SH dT w/o SRM', c='red', linestyle='dashed', zorder=100)
+    ax.plot(T_SRM_nh, label='NH dT w SRM', c='blue', zorder=0)
+    ax.plot(T_SRM_sh, label='SH dT w SRM', c='blue', linestyle='dashed', zorder=0)
+    ax.plot([t0, t5], [0, 0], c='black', linewidth=0.5)
+    ax.legend(loc='upper left', fontsize=12)
+    ax.set_xlabel('Years', fontsize=14)
+    ax.set_ylabel('Temp. ($^\circ$C)', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph5_' + filename)
+    return fig
 
-
+# Function to create the sixth plot
+def graph6():
+    fig, ax = plt.subplots(figsize=(11,6.5))
+    fig.suptitle(title, fontsize=16)
+    ax.plot(monsoon_noSRM, label='monsoon w/o SRM', c='red', zorder=100)
+    ax.plot(monsoon_SRM, label='monsoon w SRM', c='blue', zorder=0)
+    ax.plot([t0, t5], [0, 0], c='black', linewidth=0.5)
+    ax.legend(loc='lower left', fontsize=12)
+    ax.set_xlabel('Years', fontsize=14)
+    ax.set_ylabel('Monsoon (%)', fontsize=14)
+    ax.set_xlim(t0, t5)
+    ax.set_xticks(np.arange(t0, t5+1, 25))
+    ax.tick_params(size=14)
+    fig.tight_layout()
+    fig.savefig(dirout + 'graph6_' + filename)
+    return fig
+#
+# graph6()
+#graph3()
+fig1 = graph1()
+fig1.tight_layout()
+fig1.savefig(dirout+filename)
+#print(graph6())
 if pltshow: plt.show()
