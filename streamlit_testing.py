@@ -144,26 +144,32 @@ def fourth_page():
     st.title("Your Results")
     st.write(f"You selecteed: {', '.join(st.session_state.selected_regions)} and {', '.join(st.session_state.tlocations)}")
     st.write("To be implemented...")
-    t.emipoints = st.session_state.tlocations
+    points = st.session_state.tlocations
 
+    t.setup_plots(points)
     fig = t.graph6()
+    st.pyplot(fig)
+
     #st.title(f"Fip: {fig}")
 
     # Display the plot using Streamlit
-    st.pyplot(fig)
+    t.setup_plots(points)
     fig = t.graph1()
     st.pyplot(fig)
 
-
+    t.setup_plots(points)
     fig = t.graph2()
     st.pyplot(fig)
 
+    t.setup_plots(points)
     fig = t.graph3()
     st.pyplot(fig)
 
-    fig = t.graph4(t.emipoints)
+    t.setup_plots(points)
+    fig = t.graph4()
     st.pyplot(fig)
 
+    t.setup_plots(points)
     fig = t.graph5()
     st.pyplot(fig)
 
