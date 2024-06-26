@@ -383,7 +383,7 @@ def graph3():
     return fig
 
 # Function to create the fourth plot
-def graph4():
+def graph4(emipoints):
     fig, ax = plt.subplots(figsize=(11,6.5))
     fig.suptitle(title, fontsize=16)
     ax.plot(g_SRM_nh, label='NH SRM g', c='blue')

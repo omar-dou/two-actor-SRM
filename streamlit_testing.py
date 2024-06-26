@@ -147,7 +147,7 @@ def fourth_page():
     t.emipoints = st.session_state.tlocations
 
     fig = t.graph6()
-    #st.title(f"Fig: {fig}")
+    #st.title(f"Fip: {fig}")
 
     # Display the plot using Streamlit
     st.pyplot(fig)
@@ -161,7 +161,7 @@ def fourth_page():
     fig = t.graph3()
     st.pyplot(fig)
 
-    fig = t.graph4()
+    fig = t.graph4(t.emipoints)
     st.pyplot(fig)
 
     fig = t.graph5()
