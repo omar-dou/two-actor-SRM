@@ -45,6 +45,7 @@ add_bg_from_local('/Users/omar/Documents/yemoun.jpg')
 # Define page states
 PAGES = {
     "Home": "home",
+    "First Page": "first_page",
     "Second Page": "second_page",
     "Third Page": "third_page",
     "Fourth Page": "fourth_page",
@@ -64,7 +65,7 @@ def main():
         """)
 
         if st.button("Get Started"):
-            st.session_state.page = PAGES["Second Page"]  # Set page state to Second Page upon button click
+            st.session_state.page = PAGES["First Page"]  # Set page state to Second Page upon button click
 
     with col2:
         st.image("/Users/omar/Documents/loaded.gif", caption="Our Logo")
@@ -80,6 +81,9 @@ def main():
     if "page" not in st.session_state:
         st.session_state.page = PAGES["Home"]  # Default to Home page
 
+    if st.session_state.page == PAGES["First Page"]:
+        first_page()
+
     if st.session_state.page == PAGES["Second Page"]:
         second_page()
     
@@ -89,33 +93,45 @@ def main():
     if st.session_state.page == PAGES["Fourth Page"]:
         fourth_page()
 
-def second_page():
+def first_page():
     st.title("Selection Task #1")
-    st.write("Please select a topic(s) to test.")
+    st.write("Choose the number of actors participating.")
+    if "selected_actor" not in st.session_state:
+        st.session_state.selected_actor = None
 
-    # Use session state to track selected regions
-    if "selected_regions" not in st.session_state:
-        st.session_state.selected_regions = []
+    actors = ["1 Actor", "2 Actors", "3 Actors"]
+    selected_actor = st.radio("How many actors are participating?:", actors)
 
-    # Display region selection checkboxes
+    if selected_actor:
+        st.session_state.selected_actor = selected_actor
+        st.session_state.selected_actor_count = int(selected_actor.split()[0])
+        st.session_state.current_actor_index = 1
+        st.session_state.results = []
+        if st.button("Yes", key="start_button"):  # Unique key for the button
+            st.session_state.page = PAGES["Second Page"]
+#=============================================================================================================================
+def second_page():
+    st.title(f"Selection Task #2 for Actor {st.session_state.current_actor_index}")
+    st.write("Please select one area to protect.")
+
+    if "selected_region" not in st.session_state:
+        st.session_state.selected_region = None
+
     regions = ["Northern Hemisphere", "Southern Hemisphere", "Global Temperature", "Monsoon Levels"]
 
-    for region in regions:
-        if st.checkbox(region, key=region):
-            if region not in st.session_state.selected_regions:
-                st.session_state.selected_regions.append(region)
-        else:
-            if region in st.session_state.selected_regions:
-                st.session_state.selected_regions.remove(region)
+    selected_region = st.radio("Regions", options=regions, key=f"region_actor_{st.session_state.current_actor_index}")
 
-    # Display selected regions and "Next Button" if any region is selected
-    if st.session_state.selected_regions:
-        st.write(f"You selected: {', '.join(st.session_state.selected_regions)}")
-        if st.button("Next"):
+    st.session_state.selected_region = selected_region
+
+    if st.session_state.selected_region:
+        st.write(f"You selected: {st.session_state.selected_region}.")
+        if st.button("Next", key=f"next_button_{st.session_state.current_actor_index}"):  # Unique key for the button
             st.session_state.page = PAGES["Third Page"]
 
+
+
 def third_page():
-    st.title("Selection Task #2")
+    st.title("Selection Task #3")
     st.write("Please select a loocation.")
     
     if "tlocations" not in st.session_state:
@@ -133,48 +149,90 @@ def third_page():
                 st.session_state.tlocations.remove(location)
 
     # Display selected angle and "Next Button" if an angle is selected
-    if st.session_state.tlocations:
-        st.write(f"You selected: {', '.join(st.session_state.tlocations)}")
-        if st.button("Next"):
+    if st.button("Next", key=f"next_button_fourth_page_{st.session_state.current_actor_index}"):
+        # Append current actor's result to results list
+        result = {
+            "actor": st.session_state.current_actor_index,
+            "regions": st.session_state.selected_region,
+            "epoints": st.session_state.tlocations
+        }
+        st.session_state.results.append(result)
+
+        # Move to the next actor or to the results page
+        if st.session_state.current_actor_index < st.session_state.selected_actor_count:
+            st.session_state.current_actor_index += 1
+            st.session_state.selected_region = []  # Reset selected regions for next actor
+            st.session_state.selected_angle = None  # Reset selected angle for next actor
+            st.session_state.page = PAGES["Second Page"]
+        else:
             st.session_state.page = PAGES["Fourth Page"]
-    t.emipoints = st.session_state.tlocations
 
 def fourth_page():
     st.set_option('deprecation.showPyplotGlobalUse', False)
     st.title("Your Results")
-    st.write(f"You selecteed: {', '.join(st.session_state.selected_regions)} and {', '.join(st.session_state.tlocations)}")
-    st.write("To be implemented...")
-    points = st.session_state.tlocations
+    st.write(f"{st.session_state.results}")
 
-    t.setup_plots(points)
-    fig = t.graph6()
-    st.pyplot(fig)
+#d['key4']
+    act1 = st.session_state.results[0]
+    actnums = act1['actor']
+    region1 = act1['regions']
+    points1 = act1['epoints'] 
+
+    if len(st.session_state.results) > 1:
+        act2 = st.session_state.results[1]
+        actnums = act2['actor']
+        region2 = act2['regions']
+        points2 = act2['epoints'] 
+        if len(st.session_state.results) > 2:
+            act3= st.session_state.results[2]
+            actnums = act3['actor']
+            region3 = act3['regions']
+            points3 = act3['epoints'] 
+    
+
+
+    if actnums == 3: 
+        P = t.setup_actor3(region1, points1, region2, points2, region3, points3)
+    elif actnums == 2: 
+        P = t.setup_actor2(region1, points1, region2, points2)
+    else:
+        P = t.setup_actor1(region1, points1)
+    st.write(P)
+
+
+    # points = st.session_state.tlocations
+
 
     #st.title(f"Fip: {fig}")
 
     # Display the plot using Streamlit
-    t.setup_plots(points)
+    t.setup_plots(P)
     fig = t.graph1()
     st.pyplot(fig)
 
-    t.setup_plots(points)
+    t.setup_plots(P)
     fig = t.graph2()
     st.pyplot(fig)
 
-    t.setup_plots(points)
-    fig = t.graph3()
-    st.pyplot(fig)
-
-    t.setup_plots(points)
+    t.setup_plots(P)
     fig = t.graph4()
     st.pyplot(fig)
 
-    t.setup_plots(points)
+    t.setup_plots(P)
     fig = t.graph5()
     st.pyplot(fig)
 
+    t.setup_plots(P)
+    fig = t.graph6()
+    st.pyplot(fig)
 
-    st.title(f"Emipoints: {t.emipoints}")
+    t.setup_plots(P)
+    fig = t.graph3(P)
+    st.pyplot(fig)
+
+
+
+    # st.title(f"Emipoints: {t.emipoints}")
 
 
 if __name__ == "__main__":
