@@ -70,10 +70,14 @@ def emi2aod(emits,aod_strat_sh,aod_strat_nh,nbyr_irf):
     #--loop on experiments
     for exp in emits.keys():
        #--loop on time series, only consider last nbyr years
-       for yr,emi in enumerate(emits[exp][-nbyr_irf[exp]:]):     
-           #--AODs by summing on injection points and years by convolving with IRF
+        for yr,emi in enumerate(emits[exp][-nbyr_irf[exp]:]):    
+           f = open("myfile.txt", "w")
+           #--AODs by summing on injection points and years by convolving with IRF l
+           f.write(" ".join(("Exp: ", exp," | yrend: ", str(yrend), " | yr: ", str(yr))))
+           f.close()
            AOD_SH += aod_strat_sh[exp][yrend-1-yr]*emi/emi0
            AOD_NH += aod_strat_nh[exp][yrend-1-yr]*emi/emi0
+
     return AOD_SH, AOD_NH
 #
 #--------------------------------------

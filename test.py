@@ -6,6 +6,7 @@ import random
 import argparse
 import sys
 import os
+import myclim as mc
 from myclim import clim_sh_nh, initialise_aod_responses, emi2aod, emi2rf, Monsoon, Monsoon_IPSL
 from matplotlib.widgets import Button
 from matplotlib.figure import Figure
@@ -61,24 +62,23 @@ tau_nh_sh_lower=20.
 #--List of experiments with list of actors, type of setpoint, setpoint, emissions min/max and emission points
 #--single actor in NH emitting in his own hemisphere
 
-def setup_actor1(types, emipoints):
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints,'t1':50,'t2':70,'stops':[]}
+def setup_actor1(types, setp, emipoints):
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types,'setpoint': setp, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints,'t1':50,'t2':70,'stops':[]}
   P={'A':A}
   # if 'D' in vars(): P['D']=D 
 
   return P
 
-def setup_actor2(types1, emipoints1, types2, 
-emipoints2):
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types1,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints1,'t1':50,'t2':70,'stops':[]}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types2,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints2,'t1':50,'t2':70,'stops':[]}
+def setup_actor2(types1, setp1, emipoints1, types2, setp2, emipoints2):
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types1,'setpoint': setp1, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints1,'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types2,'setpoint':setp2, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints2,'t1':50,'t2':70,'stops':[]}
   P={'A':A}
   if 'B' in vars(): P['B']=B
   return P
-def setup_actor3(types1, emipoints1, types2, emipoints2, types3, emipoints3):
-  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types1,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints1,'t1':50,'t2':70,'stops':[]}
-  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types2,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints2,'t1':50,'t2':70,'stops':[]}
-  C={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types3,'setpoint': 0.0, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints3,'t1':50,'t2':70,'stops':[]}
+def setup_actor3(types1, setp1, emipoints1, types2, setp2, emipoints2, types3, setp3, emipoints3):
+  A={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types1,'setpoint': setp1, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints1,'t1':50,'t2':70,'stops':[]}
+  B={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types2,'setpoint': setp2, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints2,'t1':50,'t2':70,'stops':[]}
+  C={'Kp':0.8, 'Ki':0.6, 'Kd':0.0,'type':types3,'setpoint': setp3, 'emimin':0.0,'emimax':10.0,'emipoints':emipoints3,'t1':50,'t2':70,'stops':[]}
   P={'A':A}
   if 'B' in vars(): P['B']=B
   if 'C' in vars(): P['C']=C
@@ -89,6 +89,8 @@ def setup_actor3(types1, emipoints1, types2, emipoints2, types3, emipoints3):
   #
   #--Initialise properties of Actors
 def setup_plots(P):
+  global aod_strat_sh, aod_strat_nh, nbyr_irf
+  aod_strat_sh, aod_strat_nh, nbyr_irf = initialise_aod_responses()
   global Actors, title
   Actors=P.keys()
   Kp='Kp' ; Ki='Ki' ; Kd='Kd' ; setpoint='setpoint'
@@ -189,7 +191,7 @@ def setup_plots(P):
   monsoon_SRM=[] ; monsoon_noSRM=[] 
   #
   #--loop on time
-  st.write(f"t0, t5: {t0}, {t5}" )
+  # st.write(f"t0, t5: {t0}, {t5}" )
 
   for t in range(t0,t5):
     #
@@ -255,7 +257,7 @@ def setup_plots(P):
             emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](TSRMsh+TSRMsh_noise_obs[t],dt=1))
         if P[Actor]['type']=='monsoon':
             emi_SRM[Actor][emipoint].append(PIDs[Actor][emipoint](-1*monsoon+monsoon_noise_obs[t],dt=1))
-  st.write(f"emi_SRM: {emi_SRM[Actor][emipoint]}" )
+  # st.write(f"emi_SRM: {emi_SRM[Actor][emipoint]}" )
   #
   #--change sign of emissions before plotting
   for Actor in Actors:
